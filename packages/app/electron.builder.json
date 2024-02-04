@@ -1,0 +1,50 @@
+{
+	"$schema": "https://json.schemastore.org/electron-builder.json",
+	"appId": "example.com",
+	"extraMetadata": {
+		"name": "items-adder-preview",
+		"description": "preview the items of minecraft plugin : itemsadder"
+	},
+	"productName": "items-adder-preview",
+	"asar": false,
+	"copyright": "Copyright © 2021 enncy",
+	"nsis": {
+		"oneClick": false,
+		"perMachine": true,
+		"allowToChangeInstallationDirectory": true
+	},
+	"win": {
+		"icon": "public/img/favicon.png",
+		"artifactName": "items-adder-preview-${version}-setup-${os}-${arch}.${ext}",
+		"target": [
+			{
+				"target": "nsis",
+				"arch": ["x64", "ia32"]
+			}
+		]
+	},
+	"mac": {
+		"icon": "public/img/favicon.icns",
+		"artifactName": "items-adder-preview-${version}-setup-${os}-${arch}.${ext}",
+		"target": [
+			{
+				"target": "zip",
+				"arch": ["x64", "arm64"]
+			},
+			{
+				"target": "dmg",
+				"arch": ["x64", "arm64"]
+			}
+		]
+	},
+	"linux": {
+		"icon": "public/img/favicon.png",
+		"artifactName": "items-adder-preview-${version}-setup-${os}-${arch}.${ext}",
+		"target": [
+			{
+				"target": "AppImage",
+				"arch": ["x64", "arm64"]
+			}
+		]
+	}
+}

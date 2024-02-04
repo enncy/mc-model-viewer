@@ -1,0 +1,19 @@
+{
+	"name": "app",
+	"version": "0.0.1",
+	"description": "app of electron-app",
+	"main": "./lib/index.js",
+	"scripts": {
+		"dev": "tsc && chcp 65001 && electron .",
+		"dev:mac": "tsc && electron .",
+		"pack": "tsc && electron-builder --config ./electron.builder.json --dir --publish never",
+		"dist": "tsc && electron-builder --config ./electron.builder.json --publish never"
+	},
+	"devDependencies": {
+		"electron": "23.0.0",
+		"electron-builder": "^23.1.0"
+	},
+	"dependencies": {
+		"@electron/remote": "^2.0.12"
+	}
+}
