@@ -10,8 +10,8 @@
 			@change="(e) => browseResult(e)"
 		/>
 
-		<div class="m-3">
-			<div class="shadow p-2">
+		<div>
+			<div class="shadow p-3">
 				<a-row>
 					<a-col flex="auto">
 						<a-space>
@@ -45,13 +45,23 @@
 						flex="200px"
 						class="flex justify-end"
 					>
-						<a-button @click="createWorkspace"> + 创建工作区</a-button>
+						<a-space>
+							<a-button @click="createWorkspace"> + 创建工作区</a-button>
+							<a-tooltip
+								content="设置"
+								@click="state.setting_modal.visible = true"
+							>
+								<a-button shape="circle">
+									<IconSettings class="text-lg" />
+								</a-button>
+							</a-tooltip>
+						</a-space>
 					</a-col>
 				</a-row>
 			</div>
 		</div>
 
-		<div class="m-3">
+		<div>
 			<div
 				v-if="current_workspace"
 				class="h-full"
@@ -62,21 +72,40 @@
 				<a-empty />
 			</template>
 		</div>
+
+		<a-modal
+			v-model:visible="state.setting_modal.visible"
+			title="设置"
+			:footer="false"
+			:simple="false"
+			:width="800"
+		>
+			<Settings />
+		</a-modal>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { store } from '@/store';
 import { Button, Input, Message, Modal } from '@arco-design/web-vue';
-import { h, ref, computed } from 'vue';
+import { h, ref, computed, reactive } from 'vue';
 import WorkspaceComponent from '@/components/Workspace.vue';
 import { Workspace } from '../utils/workspace';
+import Settings from '@/components/Settings.vue';
 
 const folderSelectorRef = ref();
 const files = ref<FileList>();
 const selected = ref(false);
 
 const current_workspace = computed(() => store.workspaces.find((w) => w.name === store.current_workspace_name));
+
+const win = window;
+
+const state = reactive({
+	setting_modal: {
+		visible: false
+	}
+});
 
 function removeWorkspace() {
 	Modal.confirm({
@@ -191,9 +220,12 @@ function browseResult(e: Event) {
 </script>
 
 <style scoped lang="less">
+// p-3 是 0.75rem
+@HeaderHeight: calc(32px + (0.75rem * 2));
+
 .page-container {
 	display: grid;
-	grid-template-rows: 64px calc(100% - 64px);
+	grid-template-rows: @HeaderHeight calc(100% - @HeaderHeight);
 	height: 100%;
 }
 </style>

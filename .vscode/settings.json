@@ -21,5 +21,6 @@
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
 	"editor.wordBasedSuggestions": "off",
-	"typescript.tsdk": "node_modules\\typescript\\lib"
+	"typescript.tsdk": "node_modules\\typescript\\lib",
+	"cSpell.words": ["blockbench", "itemsadder"]
 }

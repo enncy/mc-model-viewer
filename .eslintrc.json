@@ -30,7 +30,8 @@
 		"space-before-function-paren": "off",
 		"func-call-spacing": "off",
 		"no-redeclare": "off",
-		"no-unused-vars": "off"
+		"no-unused-vars": "off",
+		"vue/require-v-for-key": "off"
 	},
 
 	"globals": {

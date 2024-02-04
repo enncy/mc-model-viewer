@@ -1,5 +1,8 @@
-import { ItemsAdderConfigType, ItemsAdderData, WorkspaceFile, ItemsAdderItemType } from './interface';
+import { ItemsAdderConfigType, ItemsAdderData, WorkspaceFile } from './interface';
 import yaml from 'yaml';
+import { isElectronEnv, requireElectronContext, runIn } from './remote';
+import { Message } from '@arco-design/web-vue';
+import { EventEmitter } from 'events';
 
 export interface WorkspaceOptions {
 	name: string;
@@ -7,18 +10,89 @@ export interface WorkspaceOptions {
 }
 
 export class Workspace {
-	name: string;
+	/**
+	 * ItemsAdder插件的根目录，一般为'contents'
+	 */
 	root: string = '';
-	files: WorkspaceFile[];
-	CONFIGS_FOLDER_NAME = 'configs';
-	MODELS_FOLDER_NAME = 'models';
-	TEXTURES_FOLDER_NAME = 'textures';
 
-	constructor(name: string, files: WorkspaceFile[]) {
-		this.name = name;
-		this.files = files;
+	/**
+	 * 是否是有效的ItemsAdder工作区
+	 */
+	valid: boolean = false;
+	/**
+	 * 是否正在加载文件
+	 */
+	files_loading: boolean = false;
+
+	public static CONFIGS_FOLDER_NAME = 'configs';
+	public static MODELS_FOLDER_NAME = 'models';
+	public static TEXTURES_FOLDER_NAME = 'textures';
+
+	constructor(
+		/**
+		 * 工作区名称
+		 */
+		public name: string,
+		/**
+		 * 工作区文件列表
+		 */
+		public files: WorkspaceFile[],
+		/**
+		 * 设置
+		 */
+		public settings: {
+			auto_update_files: boolean;
+			need_update_flex_exts: string[];
+			itemsadder_plugin_folder_name: string;
+			itemsadder_plugin_contents_name: string;
+		}
+	) {
+		/**
+		 * 如果是electron环境，更新文件内容
+		 */
+		if (isElectronEnv() && this.settings.auto_update_files) {
+			this.files_loading = true;
+			updateFileContent(files, this.settings.need_update_flex_exts)
+				?.then(() => {
+					this.files_loading = false;
+					this.onFilesLoadingFinish();
+				})
+				?.catch((err) => {
+					Message.error('工作区加载失败: ' + String(err));
+					console.error(err);
+				});
+		}
+
 		this.root = files[0]?.webkitRelativePath?.split('/')[0] || '';
+
+		runIn({
+			electron: () => {
+				/**
+				 * ItemsAdder插件的内容路径
+				 */
+				const itemsadder_plugin_path =
+					files[0].path?.replace(/\\/g, '/').replace(files[0]?.webkitRelativePath, '') || '';
+
+				if (
+					itemsadder_plugin_path.split('/').filter(String).at(-1) !== this.settings.itemsadder_plugin_folder_name ||
+					this.root !== this.settings.itemsadder_plugin_contents_name
+				) {
+					this.valid = false;
+				} else {
+					this.valid = true;
+				}
+			},
+			web: () => {
+				if (this.root !== this.settings.itemsadder_plugin_contents_name) {
+					this.valid = false;
+				} else {
+					this.valid = true;
+				}
+			}
+		});
 	}
+
+	public onFilesLoadingFinish() {}
 
 	public getFolders() {
 		let folders: string[] = [];
@@ -43,7 +117,7 @@ export class Workspace {
 		const children: WorkspaceFile[] = [];
 		for (const file of this.files) {
 			if (
-				file.webkitRelativePath.startsWith(`${this.root}/${folder}/${this.CONFIGS_FOLDER_NAME}`) &&
+				file.webkitRelativePath.startsWith(`${this.root}/${folder}/${Workspace.CONFIGS_FOLDER_NAME}`) &&
 				(file.name.endsWith('yaml') || file.name.endsWith('yml'))
 			) {
 				children.push(file);
@@ -72,7 +146,7 @@ export class Folder {
 		return this.workspace.files.find(
 			(f) =>
 				f.webkitRelativePath ===
-				`${this.workspace.root}/${this.name}/${this.workspace.MODELS_FOLDER_NAME}/${model_relative_path}.json`
+				`${this.workspace.root}/${this.name}/${Workspace.MODELS_FOLDER_NAME}/${model_relative_path}.json`
 		);
 	}
 
@@ -86,7 +160,7 @@ export class Folder {
 
 		return this.workspace.files.find((f) => {
 			// eslint-disable-next-line max-len
-			const texture_path_without_extname = `${this.workspace.root}/${this.name}/${this.workspace.TEXTURES_FOLDER_NAME}/${relative_path}`;
+			const texture_path_without_extname = `${this.workspace.root}/${this.name}/${Workspace.TEXTURES_FOLDER_NAME}/${relative_path}`;
 
 			if (
 				f.webkitRelativePath === texture_path_without_extname + '.png' ||
@@ -105,7 +179,7 @@ export class Folder {
 	public getItemTextureAbsolutePath(texture_relative_path: string) {
 		return this.workspace.files.find((f) => {
 			// eslint-disable-next-line max-len
-			const texture_path_without_extname = `${this.workspace.root}/${this.name}/${this.workspace.TEXTURES_FOLDER_NAME}/${texture_relative_path}`;
+			const texture_path_without_extname = `${this.workspace.root}/${this.name}/${Workspace.TEXTURES_FOLDER_NAME}/${texture_relative_path}`;
 
 			if (
 				f.webkitRelativePath === texture_path_without_extname + '.png' ||
@@ -181,4 +255,55 @@ export class Folder {
 
 		return items_adder_data;
 	}
+}
+
+function updateFileContent(files: WorkspaceFile[], NEED_UPDATE_FILE_EXTS: string[]) {
+	return requireElectronContext(({ fs, path }) => {
+		return Promise.all(
+			files.map((file) => {
+				return new Promise<void>((resolve, reject) => {
+					const file_path = file.path;
+
+					if (!file_path) {
+						return resolve();
+					}
+
+					fs.stat(file_path, (err, stats) => {
+						if (err) {
+							return reject(err);
+						}
+
+						if (
+							stats.isFile() &&
+							// 如果文件的修改时间大于上次加载的时间
+							stats.mtime.getTime() > file.lastModified &&
+							// 并且文件是需要更新的格式的文件
+							NEED_UPDATE_FILE_EXTS.some((ext) => path.extname(file_path).includes(ext))
+						) {
+							console.log('update file content:', file_path);
+
+							fs.readFile(file_path, (err, data) => {
+								if (err) {
+									return reject(err);
+								}
+								// 更新文件内容
+								if (['.png', '.jpg'].some((ext) => path.extname(file_path).includes(ext))) {
+									file.content = `data:image/${path.extname(file_path).replace('.', '')};base64,${data.toString(
+										'base64'
+									)}`;
+								} else {
+									file.content = data.toString();
+								}
+
+								file.lastModified = stats.mtime.getTime();
+								resolve();
+							});
+						} else {
+							resolve();
+						}
+					});
+				});
+			})
+		);
+	});
 }

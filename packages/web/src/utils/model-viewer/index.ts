@@ -2,6 +2,18 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { MinecraftModelType } from '../interface';
 import { waitForAdded } from './utils';
+
+interface McModelRendererOptions {
+	height: number;
+	width: number;
+	controls?: {
+		/**
+		 * 是否开启自动旋转
+		 */
+		autoRotate?: boolean;
+	};
+}
+
 /**
  *
  * 创建一个 由 blockbench 创建的 MC 模型的渲染器
@@ -16,8 +28,10 @@ export class McModelRenderer {
 	scene: THREE.Scene;
 	camera: THREE.PerspectiveCamera;
 	controls: OrbitControls;
+	// 渲染时的默认偏移位置
+	public static COMMON_POSITION_OFFSET = -8;
 
-	constructor(options: { height: number; width: number }) {
+	constructor(options: McModelRendererOptions) {
 		this.options = options;
 
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -31,10 +45,10 @@ export class McModelRenderer {
 		/**
 		 * 相机
 		 */
-		this.camera = new THREE.PerspectiveCamera(60, options.width / options.height, 1, 1000);
-		this.camera.position.x = 16;
+		this.camera = new THREE.PerspectiveCamera(45, options.width / options.height, 1, 1000);
+		this.camera.position.x = -16;
 		this.camera.position.y = 16;
-		this.camera.position.z = 32;
+		this.camera.position.z = -16;
 
 		/**
 		 * 轨道控制器
@@ -44,6 +58,9 @@ export class McModelRenderer {
 		this.controls.dampingFactor = 0.2;
 		this.controls.zoomSpeed = 1.4;
 		this.controls.rotateSpeed = 0.6;
+		// 是否开启自动旋转
+		this.controls.autoRotate = options.controls?.autoRotate || false;
+		this.controls.autoRotateSpeed = 1;
 
 		const render = async () => {
 			window.requestAnimationFrame(render);
@@ -51,6 +68,10 @@ export class McModelRenderer {
 			await this.draw();
 		};
 		render();
+	}
+
+	public dispose() {
+		this.renderer.dispose();
 	}
 
 	private async draw() {
@@ -82,38 +103,94 @@ export class McModelRenderer {
 		return this;
 	}
 
+	async setBackGroundColor(color: 'transparent' | 'white') {
+		this.renderer.setClearColor(color === 'transparent' ? 0x000000 : 0xffffff, color === 'transparent' ? 0 : 1);
+		return this;
+	}
+
 	/**
 	 * 添加辅助网格线
 	 */
-	async showGrid() {
-		const g = this.scene.getObjectByName('grid');
-		const a = this.scene.getObjectByName('arrow');
-		if (g && a) {
-			g.visible = true;
-			a.visible = true;
+	async showGridHelper() {
+		const _grid = this.scene.getObjectByName('grid');
+		const _biggerGrid = this.scene.getObjectByName('bigger-grid');
+		const _arrow = this.scene.getObjectByName('arrow');
+		if (_grid && _biggerGrid && _arrow) {
+			_grid.visible = true;
+			_biggerGrid.visible = true;
+			_arrow.visible = true;
 			return;
 		}
 
 		// 网格辅助
 		const gridHelper = new THREE.GridHelper(16);
+		gridHelper.name = 'grid';
 		gridHelper.material.opacity = 0.2;
 		gridHelper.material.transparent = true;
-		gridHelper.position.y = -8;
+		gridHelper.position.y = McModelRenderer.COMMON_POSITION_OFFSET;
 		await this.add(gridHelper);
 
-		const geometry = new THREE.BufferGeometry();
-		const vertices: number[] = [];
-		// 绘制箭头
-		vertices.push(-1, -8, 9);
-		vertices.push(1, -8, 9);
-		vertices.push(1, -8, 9);
-		vertices.push(0, -8, 10);
-		vertices.push(0, -8, 10);
-		vertices.push(-1, -8, 9);
-		geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
-		const arrow = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: 0xafafaf }));
-		await this.add(arrow);
+		// 网格辅助
+		const biggerGridHelper = new THREE.GridHelper(16 * 3, 3);
+		biggerGridHelper.name = 'bigger-grid';
+		biggerGridHelper.material.opacity = 0.2;
+		biggerGridHelper.material.transparent = true;
+		biggerGridHelper.position.y = McModelRenderer.COMMON_POSITION_OFFSET;
+		await this.add(biggerGridHelper);
 
+		// 箭头
+		const arrow = new THREE.BufferGeometry();
+		const positions = new Float32Array(
+			[
+				[-1, McModelRenderer.COMMON_POSITION_OFFSET, -9],
+				[1, McModelRenderer.COMMON_POSITION_OFFSET, -9],
+				[1, McModelRenderer.COMMON_POSITION_OFFSET, -9],
+				[0, McModelRenderer.COMMON_POSITION_OFFSET, -10],
+				[0, McModelRenderer.COMMON_POSITION_OFFSET, -10],
+				[-1, McModelRenderer.COMMON_POSITION_OFFSET, -9]
+			].flat()
+		);
+		arrow.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+		const arrowLine = new THREE.LineSegments(arrow, new THREE.MeshBasicMaterial({ color: 0xafafaf }));
+		arrowLine.name = 'arrow';
+		this.add(arrowLine);
+
+		return this;
+	}
+
+	hideGridHelper() {
+		const grid = this.scene.getObjectByName('grid');
+		const biggerGrid = this.scene.getObjectByName('bigger-grid');
+		const arrow = this.scene.getObjectByName('arrow');
+		if (grid && biggerGrid && arrow) {
+			grid.visible = false;
+			biggerGrid.visible = false;
+			arrow.visible = false;
+		}
+		return this;
+	}
+
+	async showAxesHelper() {
+		const axes = this.scene.getObjectByName('axes');
+		if (axes) {
+			axes.visible = true;
+			return;
+		}
+		// 坐标轴辅助
+		const axesHelper = new THREE.AxesHelper(100);
+		axesHelper.name = 'axes';
+		axesHelper.position.x = McModelRenderer.COMMON_POSITION_OFFSET;
+		axesHelper.position.y = McModelRenderer.COMMON_POSITION_OFFSET;
+		axesHelper.position.z = McModelRenderer.COMMON_POSITION_OFFSET;
+		await this.add(axesHelper);
+		return this;
+	}
+
+	hideAxesHelper() {
+		const axes = this.scene.getObjectByName('axes');
+		if (axes) {
+			axes.visible = false;
+		}
 		return this;
 	}
 
@@ -124,19 +201,8 @@ export class McModelRenderer {
 
 		await this.add(new THREE.AmbientLight(0xffffff, 1));
 		const light = new THREE.DirectionalLight(0xffffff, 2);
-		light.position.set(4, 10, 6);
+		light.position.set(-1, 20, -1);
 		await this.add(light);
-	}
-
-	hideGrid() {
-		const g = this.scene.getObjectByName('grid');
-		const a = this.scene.getObjectByName('arrow');
-		if (g && a) {
-			g.visible = false;
-			a.visible = false;
-		}
-
-		return this;
 	}
 
 	mount(node: Node) {
@@ -183,11 +249,13 @@ export async function createMcModel(
 		const length = element.to[2] - element.from[2];
 
 		const origin = {
-			x: (element.to[0] + element.from[0]) / 2 - 8,
-			y: (element.to[1] + element.from[1]) / 2 - 8,
-			z: (element.to[2] + element.from[2]) / 2 - 8
+			x: (element.to[0] + element.from[0]) / 2 + McModelRenderer.COMMON_POSITION_OFFSET,
+			y: (element.to[1] + element.from[1]) / 2 + McModelRenderer.COMMON_POSITION_OFFSET,
+			z: (element.to[2] + element.from[2]) / 2 + McModelRenderer.COMMON_POSITION_OFFSET
 		};
-		const fix = 0.001; // if a value happens to be 0, the geometry becomes a plane and will have 4 vertices instead of 12.
+
+		// if a value happens to be 0, the geometry becomes a plane and will have 4 vertices instead of 12.
+		const fix = 0.001;
 
 		const geometry = new THREE.BoxGeometry(width + fix, height + fix, length + fix);
 
@@ -199,11 +267,6 @@ export async function createMcModel(
 				const face = specified_faces[i];
 				const uv = element.faces[face].uv;
 
-				uv[0] += 0.0005;
-				uv[1] += 0.0005;
-				uv[2] -= 0.0005;
-				uv[3] -= 0.0005;
-
 				const [u0, v0, u1, v1] = normalizedUVs(uv);
 
 				/**
@@ -212,10 +275,15 @@ export async function createMcModel(
 				 */
 
 				uvs.push(
-					[u0, v1], // 0 1 左上角
-					[u1, v1], // 1 1 右上角
-					[u0, v0], // 0 0 左下角
-					[u1, v0] // 1 0 右下脚
+					[u0, v0],
+					[u1, v0],
+					[u0, v1],
+					[u1, v1]
+					// 以下是正常顺序，但是上面的旋转角度符合 Blockbench 预览时的角度 （每旋转90度则代表每两个坐标往下移动，上方的坐标代表下方的坐标旋转180度）
+					// [u0, v1], // 0 1 左上角
+					// [u1, v1], // 1 1 右上角
+					// [u0, v0], // 0 0 左下角
+					// [u1, v0] // 1 0 右下脚
 				);
 
 				const textureIndex = Object.keys(parsed_textures).indexOf(element.faces[face].texture.replace('#', ''));
@@ -281,6 +349,9 @@ export async function createMcModel(
 	return model;
 }
 
+/**
+ * 归一化UV数据
+ */
 function normalizedUVs(uvs: number[]): number[] {
 	return uvs.map((coord, i) => (i % 2 ? 16 - coord : coord) / 16);
 }

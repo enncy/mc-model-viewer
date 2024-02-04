@@ -19,3 +19,20 @@ html.window-frame {
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
+
+body[class*='platform'] {
+	.workspace-modal-details {
+		.arco-modal-fullscreen {
+			top: 0 !important;
+			height: 100% !important;
+		}
+	}
+}
+body {
+	.workspace-modal-details {
+		.arco-modal-fullscreen {
+			top: 32px;
+			height: calc(100% - 32px);
+		}
+	}
+}

@@ -19,13 +19,19 @@ export class Previewer {
 		}
 	}
 
+	dispose() {
+		for (const renderer of this.renderer) {
+			renderer.renderer.dispose();
+		}
+	}
+
 	getDataURL(parsed_data: ParsedItemAdderItemData) {
 		const parsed_model = parsed_data.model;
 		if (parsed_model?.content) {
 			return new Promise<string>((resolve, reject) => {
 				this.waitForRenderer()
 					.then(async (renderer) => {
-						await renderParsedModel(renderer, parsed_model);
+						await renderParsedModel(renderer, parsed_model, { auto_camera: true });
 						const canvas = renderer.renderer.domElement;
 						await sleep(10);
 						if (canvas) {
