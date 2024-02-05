@@ -9,16 +9,7 @@ import path from 'path';
 export default defineConfig({
 	build: {
 		// 打包代码到 app/public 目录下，build 之后，app 目录下的代码就是最终的html代码
-		outDir: '../app/public',
-		rollupOptions: {
-			output: {
-				manualChunks(id) {
-					if (id.includes('node_modules')) {
-						return id.toString().split('node_modules/')[1].split('/')[0].toString();
-					}
-				}
-			}
-		}
+		outDir: '../app/public'
 	},
 	server: {
 		open: false
