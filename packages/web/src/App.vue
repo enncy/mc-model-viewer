@@ -21,6 +21,7 @@
 <script setup lang="ts">
 import { onMounted, ref, nextTick } from 'vue';
 import { requireElectronContext, isElectronEnv } from './utils/remote';
+// @ts-ignore
 import zhCN from '@arco-design/web-vue/es/locale/lang/zh-CN';
 
 const headerContainer = ref<HTMLDivElement>();
