@@ -194,6 +194,7 @@
 			:body-style="{ padding: '8px 12px 24px 12px' }"
 			class="workspace-modal-details"
 			:mask-closable="false"
+			:unmount-on-close="true"
 		>
 			<template #title>
 				<div
