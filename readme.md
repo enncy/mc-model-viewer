@@ -1,4 +1,10 @@
-# electron-quickly-start
+# ItemsAdder preview
+
+[Download](https://github.com/enncy/items-adder-preview/releases) | [下载](https://github.com/enncy/items-adder-preview/releases)
+
+> 一个用于预览 minecraft 插件 [ItemsAdder](https://itemsadder.devs.beer/) 物品的桌面应用
+
+> a desktop app for previewing minecraft plugin: [ItemsAdder](https://itemsadder.devs.beer/) items
 
 ## 运行
 
@@ -24,16 +30,3 @@ npm run dev:app
 ```bash
 npm run build
 ```
-
-## 发布
-
-```bash
-npm run release
-```
-
-## 替换项目占位符以及变量等可修改内容
- 
-
-替换 packages/app/electron.builder.json 里的 appId 为自己的项目域名，例如  electron.baidu.com 。
-
-修改 scripts/release.sh 里的 37 行分支名，如果提交分支是默认的 main 则无需修改。

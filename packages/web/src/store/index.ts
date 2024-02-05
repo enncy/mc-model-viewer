@@ -64,8 +64,9 @@ if (store.setting.vscode_path === '') {
 }
 
 function requireThirdPartAppPath(dir_name: string, app_name: string, callback: (path: string) => any) {
-	requireElectronContext(({ child_process, path }) => {
-		const cmd = `where /R ${process.env.HOME} ${app_name}`;
+	requireElectronContext(({ child_process, path, remote }) => {
+		const cmd = `where /R ${remote.app.getPath('home')} ${app_name}`;
+		console.log('cmd', cmd);
 		const exec = child_process.exec(cmd);
 
 		exec.stdout?.on('data', (data) => {
@@ -77,6 +78,7 @@ function requireThirdPartAppPath(dir_name: string, app_name: string, callback: (
 		});
 
 		exec.stderr?.on('data', (data) => {
+			console.error(data);
 			Message.error(data.toString());
 		});
 	});
