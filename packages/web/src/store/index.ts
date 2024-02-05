@@ -62,24 +62,25 @@ if (store.setting.vscode_path === '') {
 		Message.success('VSCode路径已自动设置');
 	});
 }
-
 function requireThirdPartAppPath(dir_name: string, app_name: string, callback: (path: string) => any) {
 	requireElectronContext(({ child_process, path, remote }) => {
-		const cmd = `where /R ${remote.app.getPath('home')} ${app_name}`;
-		console.log('cmd', cmd);
-		const exec = child_process.exec(cmd);
+		if (process.platform === 'win32') {
+			const cmd = `where /R ${remote.app.getPath('home')} ${app_name}`;
+			console.log('cmd', cmd);
+			const exec = child_process.exec(cmd);
 
-		exec.stdout?.on('data', (data) => {
-			const res = data.toString();
-			if (res && path.dirname(res).endsWith(dir_name)) {
-				callback(String(res).trim());
-				exec.kill();
-			}
-		});
+			exec.stdout?.on('data', (data) => {
+				const res = data.toString();
+				if (res && path.dirname(res).endsWith(dir_name)) {
+					callback(String(res).trim());
+					exec.kill();
+				}
+			});
 
-		exec.stderr?.on('data', (data) => {
-			console.error(data);
-			Message.error(data.toString());
-		});
+			exec.stderr?.on('data', (data) => {
+				console.error(data);
+				Message.error(data.toString());
+			});
+		}
 	});
 }
