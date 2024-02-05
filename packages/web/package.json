@@ -9,6 +9,7 @@
 		"serve": "vite preview"
 	},
 	"dependencies": {
+		"@arco-design/web-vue": "^2.54.3",
 		"@electron/remote": "^2.0.12",
 		"lodash": "^4.17.21",
 		"monaco-editor": "^0.45.0",
@@ -19,7 +20,6 @@
 		"yaml": "^2.3.4"
 	},
 	"devDependencies": {
-		"@arco-design/web-vue": "^2.54.3",
 		"@types/lodash": "^4.14.202",
 		"@types/three": "^0.161.1",
 		"@vitejs/plugin-vue": "^4.2.3",
