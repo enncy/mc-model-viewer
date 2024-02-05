@@ -9,10 +9,7 @@ import path from 'path';
 export default defineConfig({
 	build: {
 		// 打包代码到 app/public 目录下，build 之后，app 目录下的代码就是最终的html代码
-		outDir: '../app/public',
-		rollupOptions: {
-			external: ['@arco-design/web-vue/es/locale/lang/zh-CN']
-		}
+		outDir: '../app/public'
 	},
 	server: {
 		open: false
