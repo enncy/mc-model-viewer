@@ -134,7 +134,7 @@
 
 		<AutoFormItem
 			class="mb-2"
-			label="BlockBench 路径"
+			label="blockbench 路径"
 		>
 			<a-input
 				v-model="store.setting.blockbench_path"
@@ -144,7 +144,43 @@
 			>
 				<template #append>
 					<div v-if="is_in_electron">
-						<a-button @click="setBlockBenchPath">设置 </a-button>
+						<a-button
+							@click="
+								() => {
+									setAppPath('BlockBench', (path) => {
+										store.setting.blockbench_path = path;
+									});
+								}
+							"
+							>设置
+						</a-button>
+					</div>
+				</template>
+			</a-input>
+		</AutoFormItem>
+
+		<AutoFormItem
+			class="mb-2"
+			label="vscode 路径"
+		>
+			<a-input
+				v-model="store.setting.vscode_path"
+				:disabled="true"
+				size="small"
+				placeholder="无"
+			>
+				<template #append>
+					<div v-if="is_in_electron">
+						<a-button
+							@click="
+								() => {
+									setAppPath('Code', (path) => {
+										store.setting.vscode_path = path;
+									});
+								}
+							"
+							>设置
+						</a-button>
 					</div>
 				</template>
 			</a-input>
@@ -161,13 +197,13 @@ const common_width = '220px';
 
 const is_in_electron = isElectronEnv();
 
-function setBlockBenchPath() {
+function setAppPath(name: string, callback: (path: string) => any) {
 	requireElectronContext(({ remote }) => {
 		remote.dialog
 			.showOpenDialog({
 				properties: ['openFile'],
 				defaultPath: store.setting.blockbench_path,
-				filters: [{ name: 'BlockBench', extensions: ['exe'] }]
+				filters: [{ name: name, extensions: ['exe'] }]
 			})
 			.then((res) => {
 				if (res.canceled) {

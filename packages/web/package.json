@@ -3,7 +3,7 @@
 	"version": "0.0.1",
 	"description": "web of electron-app",
 	"scripts": {
-		"dev": "vite --open false --port 3000 ",
+		"dev": "vite --no-open --port 3000 ",
 		"build": "vue-tsc --noEmit && vite build --emptyOutDir",
 		"build:watch": "vite build --watch",
 		"serve": "vite preview"
@@ -11,6 +11,7 @@
 	"dependencies": {
 		"@electron/remote": "^2.0.12",
 		"lodash": "^4.17.21",
+		"monaco-editor": "^0.45.0",
 		"three": "^0.161.0",
 		"vite-plugin-electron-renderer": "^0.14.5",
 		"vue": "^3.3.2",

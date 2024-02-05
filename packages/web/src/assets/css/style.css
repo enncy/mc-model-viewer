@@ -1,3 +1,9 @@
+@font-face {
+  font-family: minecraftia;
+  font-style: normal;
+  font-weight: 400;
+  src: local('Minecraftia'), url(../fonts/Minecraftia.woff) format('woff');
+}
 body,
 html,
 #app {

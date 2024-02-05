@@ -25,26 +25,10 @@ export const store = reactive({
 			width: 600,
 			height: 600
 		},
-		blockbench_path: ''
+		blockbench_path: '',
+		vscode_path: ''
 	}
 });
-
-if (store.setting.blockbench_path === '') {
-	requireElectronContext(({ child_process, remote }) => {
-		const exec = child_process.exec('where /R C:\\Users\\87752\\AppData\\Local\\Programs BlockBench.exe');
-
-		exec.stdout?.on('data', (data) => {
-			const path = data.toString();
-			if (path) {
-				store.setting.blockbench_path = String(path).trim();
-			}
-		});
-
-		exec.stderr?.on('data', (data) => {
-			Message.error(data.toString());
-		});
-	});
-}
 
 watch(
 	store,
@@ -59,4 +43,41 @@ watch(
 const localStore = localStorage.getItem('store');
 if (localStore) {
 	merge(store, JSON.parse(localStore));
+}
+
+/**
+ * 读取第三方软件路径
+ */
+
+if (store.setting.blockbench_path === '') {
+	requireThirdPartAppPath('Blockbench', 'BlockBench.exe', (res) => {
+		store.setting.blockbench_path = res;
+		Message.success('Blockbench路径已自动设置');
+	});
+}
+
+if (store.setting.vscode_path === '') {
+	requireThirdPartAppPath('Microsoft VS Code', 'Code.exe', (res) => {
+		store.setting.vscode_path = res;
+		Message.success('VSCode路径已自动设置');
+	});
+}
+
+function requireThirdPartAppPath(dir_name: string, app_name: string, callback: (path: string) => any) {
+	requireElectronContext(({ child_process, path }) => {
+		const cmd = `where /R ${process.env.HOME} ${app_name}`;
+		const exec = child_process.exec(cmd);
+
+		exec.stdout?.on('data', (data) => {
+			const res = data.toString();
+			if (res && path.dirname(res).endsWith(dir_name)) {
+				callback(String(res).trim());
+				exec.kill();
+			}
+		});
+
+		exec.stderr?.on('data', (data) => {
+			Message.error(data.toString());
+		});
+	});
 }

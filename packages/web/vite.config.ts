@@ -30,7 +30,9 @@ export default defineConfig({
 		}
 	},
 	plugins: [
-		vue(),
+		vue({
+			include: [/\.vue$/]
+		}),
 		// 处理一些外部 CDN 引入
 		// commonjs({ filter: (id) => (id.includes('xlsx') ? undefined : false) }),
 		// 不安装 electronRender 会报错 Error: Module "path" has been externalized for browser compatibility

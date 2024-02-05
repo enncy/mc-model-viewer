@@ -128,6 +128,7 @@ export interface MinecraftModelType {
 }
 
 export interface ItemsAdderConfigType {
+	file: WorkspaceFile;
 	info: { namespace: string };
 	items: Record<string, ItemsAdderItemType>;
 	entities: Record<string, ItemsAdderEntityType>;
@@ -141,6 +142,8 @@ export interface ParsedItemAdderItemModelData extends WorkspaceFile {
  * 解析后的ItemsAdder 物品和模型数据
  */
 export interface ParsedItemAdderItemData {
+	config_file: WorkspaceFile;
+
 	item_config: ItemsAdderItemType;
 	/**
 	 * 如果此物品是一个模型，那么这个字段会有值

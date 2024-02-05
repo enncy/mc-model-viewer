@@ -2,7 +2,6 @@ import { ItemsAdderConfigType, ItemsAdderData, WorkspaceFile } from './interface
 import yaml from 'yaml';
 import { isElectronEnv, requireElectronContext, runIn } from './remote';
 import { Message } from '@arco-design/web-vue';
-import { EventEmitter } from 'events';
 
 export interface WorkspaceOptions {
 	name: string;
@@ -106,7 +105,7 @@ export class Workspace {
 			const children = this.getFolderConfigsFile(folder);
 
 			for (const child of children) {
-				configs.push(yaml.parse(child.content.toString()));
+				configs.push(Object.assign({ file: child }, yaml.parse(child.content.toString())));
 			}
 			folderContents.push(new Folder(folder, configs, this));
 		}
@@ -221,6 +220,7 @@ export class Folder {
 
 					if (model_file) {
 						items_adder_data.items[key] = {
+							config_file: config.file,
 							item_config: item,
 							model: {
 								...model_file,
@@ -243,6 +243,7 @@ export class Folder {
 					}
 
 					items_adder_data.items[key] = {
+						config_file: config.file,
 						item_config: item,
 						textures: textures_result
 					};
