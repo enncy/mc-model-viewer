@@ -2,8 +2,8 @@
 	"$schema": "https://json.schemastore.org/electron-builder.json",
 	"appId": "example.com",
 	"extraMetadata": {
-		"name": "items-adder-preview",
-		"description": "preview the items of minecraft plugin : itemsadder"
+		"name": "MC Model Viewer",
+		"description": "mc-model-viewer"
 	},
 	"productName": "items-adder-preview",
 	"asar": false,
