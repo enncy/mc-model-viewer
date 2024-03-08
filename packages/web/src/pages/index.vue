@@ -1,13 +1,13 @@
 <template>
-	<div class="page-container">
+	<div class="page-container h-full">
 		<input
-			ref="folderSelectorRef"
+			id="folderSelector"
 			type="file"
 			webkitdirectory
 			directory
 			multiple="false"
 			style="display: none"
-			@change="(e) => browseResult(e)"
+			@change="(e) => fileChange(e)"
 		/>
 
 		<div>
@@ -17,27 +17,36 @@
 						<a-space>
 							<span> 工作区： </span>
 							<a-select
-								v-model="store.current_workspace_name"
+								v-model="store.current_asset_folder_name"
 								placeholder="请选择工作区"
 								style="min-width: 200px"
 							>
 								<a-option
-									v-for="workspace in store.workspaces"
-									:key="workspace.name"
-									:value="workspace.name"
-									:selected="workspace.name === store.current_workspace_name"
+									v-for="folder in store.asset_folders"
+									:key="folder.name"
+									:value="folder.name"
+									:selected="folder.name === store.current_asset_folder_name"
 								>
-									{{ workspace.name }}
+									{{ folder.name }}
 								</a-option>
 							</a-select>
 
-							<template v-if="current_workspace">
-								<a-button
-									status="danger"
-									@click="removeWorkspace"
+							<template v-if="store.current_asset_folder_name">
+								<a-tooltip content="刷新页面">
+									<a-button @click="reload">
+										<IconSync />
+									</a-button>
+								</a-tooltip>
+								<a-popconfirm
+									content="确定移除工作区？此操作不会删除本地文件"
+									@ok="removeFolder"
 								>
-									删除
-								</a-button>
+									<a-tooltip content="移除工作区">
+										<a-button status="danger">
+											<IconDelete />
+										</a-button>
+									</a-tooltip>
+								</a-popconfirm>
 							</template>
 						</a-space>
 					</a-col>
@@ -46,7 +55,7 @@
 						class="flex justify-end"
 					>
 						<a-space>
-							<a-button @click="createWorkspace"> + 创建工作区</a-button>
+							<a-button @click="selectFolder"> + 创建工作区</a-button>
 							<a-tooltip
 								content="设置"
 								@click="state.setting_modal.visible = true"
@@ -61,16 +70,74 @@
 			</div>
 		</div>
 
-		<div>
-			<div
-				v-if="current_workspace"
-				class="h-full"
+		<div
+			v-if="state.loading"
+			style="position: absolute"
+			class="w-full h-full flex justify-center items-center loading"
+		>
+			<a-spin
+				class="mt-5"
+				:loading="state.loading"
+				tip="正在加载中..."
 			>
-				<WorkspaceComponent :data="current_workspace"></WorkspaceComponent>
+			</a-spin>
+		</div>
+		<div
+			v-if="folder_render_infos.length"
+			class="h-full"
+		>
+			<a-row class="h-full flex-nowrap">
+				<a-col
+					flex="200px"
+					class="h-full me-2 border-r-2 overflow-auto"
+				>
+					<template
+						v-for="(folder, index) of folder_render_infos"
+						:key="index"
+					>
+						<div
+							class="folder text-lg"
+							:class="{ current: state.current_folder_render_info?.name === folder.name }"
+							@click="
+								() => {
+									state.current_folder_render_info = folder;
+									store.current_folder_render_info_name = folder.name;
+								}
+							"
+						>
+							<a-space size="mini">
+								<IconFolder /> <span> {{ folder.name }} </span>
+							</a-space>
+						</div>
+					</template>
+				</a-col>
+				<a-col
+					flex="auto"
+					class="h-full overflow-auto p-2"
+				>
+					<FolderRender
+						v-if="state.current_folder_render_info"
+						:folder-render-info="state.current_folder_render_info"
+						@render="render"
+					></FolderRender>
+				</a-col>
+			</a-row>
+		</div>
+
+		<div v-else>
+			<div
+				v-if="state.loading === false"
+				class="h-full flex justify-center items-center"
+			>
+				<a-empty
+					v-if="state.current_folder_render_info === undefined"
+					description="暂无数据，请在右上角新建工作区"
+				/>
+				<a-empty
+					v-else-if="state.current_folder_render_info === null"
+					description="暂无数据，可能是未读取到资源，请确保工作区的类型一致"
+				/>
 			</div>
-			<template v-else>
-				<a-empty />
-			</template>
 		</div>
 
 		<a-modal
@@ -82,140 +149,228 @@
 		>
 			<Settings />
 		</a-modal>
+
+		<a-modal
+			v-model:visible="state.create_modal.visible"
+			title="创建工作区"
+			:mask-closable="false"
+			@ok="createWorkspace"
+		>
+			<a-input
+				v-model="state.create_modal.name"
+				placeholder="输入名称"
+				class="mb-2"
+			>
+				<template #prepend>工作区名称</template>
+			</a-input>
+
+			<a-select
+				v-model="state.create_modal.type"
+				placeholder="请选择工作区类型"
+				:options="[
+					{ value: 'items-adder', label: 'items-adder' },
+					{ value: 'germ', label: '萌芽引擎' }
+				]"
+			>
+				<template #prepend>工作区名称</template>
+			</a-select>
+		</a-modal>
 	</div>
 </template>
 
 <script setup lang="ts">
 import { store } from '@/store';
-import { Button, Input, Message, Modal } from '@arco-design/web-vue';
-import { h, ref, computed, reactive } from 'vue';
-import WorkspaceComponent from '@/components/Workspace.vue';
-import { Workspace } from '../utils/workspace';
+import { ItemsAdderFolderRenderer } from '@/utils/core/items.adder.model.renderer';
+import { FolderRenderInfo, RenderItem } from '@/utils/core/renderer';
+import { AssetFolder } from '@/utils/core/workspace';
+import { Message } from '@arco-design/web-vue';
+import { onMounted, reactive, ref, watch } from 'vue';
+import { globalAssetFolder, globalFolderRenderer } from '.';
+import { ipcRenderer } from 'electron';
+import FolderRender from '@/components/FolderRender.vue';
 import Settings from '@/components/Settings.vue';
-
-const folderSelectorRef = ref();
-const files = ref<FileList>();
-const selected = ref(false);
-
-const current_workspace = computed(() => store.workspaces.find((w) => w.name === store.current_workspace_name));
-
-const win = window;
+import { runIn } from '@/utils/remote';
 
 const state = reactive({
 	setting_modal: {
 		visible: false
-	}
+	},
+	create_modal: {
+		visible: false,
+		name: '',
+		type: ''
+	},
+	current_folder_render_info: undefined as FolderRenderInfo | undefined | null,
+	loading: false
 });
 
-function removeWorkspace() {
-	Modal.confirm({
-		title: '删除工作区',
-		content: '确定要删除 ' + store.current_workspace_name + ' 工作区吗？',
-		okText: '确定',
-		cancelText: '取消',
-		onOk() {
-			store.workspaces = store.workspaces.filter((w) => w.name !== store.current_workspace_name);
-			store.current_workspace_name = store.workspaces[0]?.name || '';
-		}
-	});
-}
+const selected_file_list = ref<FileList | undefined>();
+const folder_render_infos = ref<FolderRenderInfo[]>([]);
 
-function createWorkspace() {
-	const name = ref('');
+onMounted(async () => {
+	renderPage();
+});
 
-	Modal.info({
-		simple: false,
-		title: '创建工作区',
-		content: () =>
-			h('div', [
-				h(
-					Input,
-					{
-						placeholder: '请输入工作区名称',
-						onInput: (val) => {
-							name.value = val;
+watch(
+	() => store.current_asset_folder_name,
+	() => {
+		renderPage();
+	}
+);
+
+async function renderPage() {
+	state.loading = true;
+
+	try {
+		// 清空数据
+		state.current_folder_render_info = undefined;
+		folder_render_infos.value = [];
+
+		const folder = store.asset_folders.find((f) => f.name === store.current_asset_folder_name);
+
+		if (folder && folder.type) {
+			globalAssetFolder.value = await AssetFolder.deserialize(folder);
+			if (folder.type === 'items-adder') {
+				globalFolderRenderer.value = new ItemsAdderFolderRenderer(globalAssetFolder.value);
+			}
+
+			if (globalFolderRenderer.value) {
+				await globalFolderRenderer.value.list((render_item) => {
+					// 递归查找父级文件夹，如果没有则创建
+					const info = initFolder(folder_render_infos.value, render_item.parents);
+
+					if (info) {
+						info.items.push(render_item);
+						if (state.current_folder_render_info === undefined) {
+							state.current_folder_render_info = info;
 						}
-					},
-					{
-						prepend: () => h('span', '名称：')
 					}
-				),
-				h('div', [
-					h(
-						Button,
-						{
-							type: 'primary',
-							style: 'margin-top: 10px',
-							onClick: () => {
-								openProjectPath();
-							}
-						},
-						'选择工作区文件夹'
-					),
-					h('span', selected.value ? ' 已选择' : ' 未选择')
-				])
-			]),
-		okText: '确定',
-		async onOk() {
-			if (selected.value === false) {
-				return Message.error('请选择工作区文件夹');
-			}
-			if (!name.value.trim()) {
-				return Message.error('请输入工作区名称');
-			}
-
-			const file_list = Array.from(files.value || []);
-			const result: Workspace['files'] = [];
-			for (const file of file_list) {
-				const getDataURL = () => {
-					return new Promise<any>((resolve, reject) => {
-						const reader = new FileReader();
-						reader.onload = function (e) {
-							// @ts-ignore
-							resolve(e.target.result);
-						};
-						reader.readAsDataURL(file);
-					});
-				};
-
-				console.log('file.path', file);
-
-				result.push({
-					name: file.name,
-					size: file.size,
-					path: file.path,
-					type: file.type,
-					lastModified: file.lastModified,
-					webkitRelativePath: file.webkitRelativePath,
-					content: ['.png', '.jpg'].some((ext) => file.name.endsWith(ext)) ? await getDataURL() : await file.text()
 				});
-			}
 
-			store.workspaces.push({
-				name: name.value,
-				files: result
-			});
+				if (store.current_folder_render_info_name) {
+					const find = folder_render_infos.value.find((f) => f.name === store.current_folder_render_info_name);
+					if (find) {
+						state.current_folder_render_info = find;
+					}
+				}
 
-			if (store.current_workspace_name === '') {
-				store.current_workspace_name = name.value;
+				if (state.current_folder_render_info === undefined) {
+					state.current_folder_render_info = null;
+				}
 			}
+		}
+	} catch (e) {
+		console.error(e);
+	}
+
+	state.loading = false;
+}
+
+async function fileChange(e: any) {
+	selected_file_list.value = e.target.files;
+	console.log(e.target.files);
+
+	state.create_modal.visible = true;
+}
+
+async function selectFolder() {
+	document.querySelector<HTMLInputElement>('#folderSelector')?.click();
+}
+
+async function createWorkspace() {
+	const name = state.create_modal.name;
+	if (!name.trim()) {
+		Message.error('请输入名称');
+		return;
+	}
+	if (!state.create_modal.type.trim()) {
+		Message.error('请选择类型');
+		return;
+	}
+	if (store.asset_folders.find((f) => f.name.trim() === name.trim())) {
+		Message.error('此名称下的工作区已存在');
+		return;
+	}
+
+	const folder = await AssetFolder.loadFromFiles(
+		name.trim(),
+		state.create_modal.type.trim(),
+		selected_file_list.value || []
+	);
+
+	store.asset_folders.push(folder.serialize());
+	store.current_asset_folder_name = folder.name;
+}
+
+function removeFolder() {
+	store.asset_folders = store.asset_folders.filter((f) => f.name !== store.current_asset_folder_name);
+	store.current_asset_folder_name = store.asset_folders[0]?.name || '';
+
+	renderPage();
+}
+
+// 递归查找父级文件夹，如果没有则创建
+function initFolder(folders: FolderRenderInfo[], parents: string[]) {
+	if (parents.length < 1) {
+		return undefined;
+	}
+
+	const folder = folders.find((f) => f.name === parents[0]);
+	if (folder) {
+		if (parents.length && folder.children.length) {
+			return initFolder(folder.children, parents.slice(1));
+		} else {
+			return folder;
+		}
+	} else {
+		const init = {
+			name: parents[0],
+			items: [],
+			children: []
+		};
+		folders.push(init);
+
+		if (parents.length === 1) {
+			return init;
+		}
+
+		return initFolder(init.children, parents.slice(1));
+	}
+}
+
+async function render(render_item: RenderItem) {
+	if (state.current_folder_render_info) {
+		let path = '';
+
+		if (globalAssetFolder.value?.type === 'items-adder') {
+			path = '/items-adder-render';
+		}
+
+		ipcRenderer.send(
+			'create-window-with-args',
+			location.origin + path,
+			{
+				title: render_item.displayname,
+				width: 1000,
+				height: 800,
+				minWidth: 400,
+				minHeight: 400,
+				hideTitleBar: false
+			},
+			{ render_item: JSON.parse(JSON.stringify(render_item)), asset_folder: store.current_asset_folder_name }
+		);
+	}
+}
+
+function reload() {
+	runIn({
+		electron({ remote }) {
+			remote.getCurrentWindow().reload();
 		},
-		onClose() {
-			selected.value = false;
-			files.value = undefined;
-			console.log(store.workspaces);
+		web() {
+			window.location.reload();
 		}
 	});
-}
-
-function openProjectPath() {
-	folderSelectorRef.value.click();
-}
-
-function browseResult(e: Event) {
-	// @ts-ignore
-	files.value = e.target.files;
-	selected.value = true;
 }
 </script>
 
@@ -227,5 +382,24 @@ function browseResult(e: Event) {
 	display: grid;
 	grid-template-rows: @HeaderHeight calc(100% - @HeaderHeight);
 	height: 100%;
+	min-width: 600px;
+}
+
+.folder {
+	padding: 2px 0px 2px 4px;
+	display: flex;
+	align-items: center;
+	cursor: pointer;
+	&:hover {
+		background: #f9f9f9;
+	}
+
+	&.current {
+		background: #1890ff1a;
+	}
+}
+
+.loading {
+	background-color: rgba(255, 255, 255, 0.63);
 }
 </style>

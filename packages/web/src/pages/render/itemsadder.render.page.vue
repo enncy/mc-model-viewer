@@ -5,6 +5,7 @@
 	>
 		<a-row
 			v-if="renderItemRef"
+			style="min-width: 600px"
 			class="menu-bar"
 		>
 			<a-col flex="auto">
@@ -41,11 +42,25 @@
 					详情信息 <IconDown />
 				</a-button>
 			</a-col>
+			<a-col
+				v-if="renderItemRef.data.model_json"
+				flex="100px"
+				style="height: 32px"
+				class="flex items-center justify-center"
+			>
+				<a-button
+					size="mini"
+					@click="showModelGuide"
+				>
+					操作教程 <IconQuestionCircle />
+				</a-button>
+			</a-col>
 		</a-row>
 		<div>
 			<div
 				ref="modelRenderSlotRef"
 				class="model-render-slot"
+				@contextmenu="oncModelContextmenu"
 			></div>
 
 			<div
@@ -89,47 +104,58 @@
 			</div>
 		</div>
 
-		<div
-			v-if="state.current_select_color"
-			class="color-panel p-2 text-white"
-		>
-			<div>
-				<div>rgba : {{ state.current_select_color }}</div>
-				<div>hex : {{ rgbaToHex(state.current_select_color) }}</div>
+		<div class="details-modal text-white">
+			<div
+				v-if="state.current_select_color"
+				class="p-2"
+			>
+				<div>
+					<div>rgba : {{ state.current_select_color }}</div>
+					<div>hex : {{ rgbaToHex(state.current_select_color) }}</div>
+				</div>
 			</div>
-		</div>
 
-		<div
-			v-if="state.detailsModalVisible"
-			class="details-modal p-2 text-white"
-		>
-			<div>名称：{{ renderItemRef?.displayname }}</div>
-			<div>路径：{{ '/' + renderItemRef?.parents.join('/') }}</div>
-			<div>文件路径：{{ renderItemRef?.filename }}</div>
-			<div>配置文件：{{ renderItemRef?.data.config_filepath }}</div>
+			<div
+				v-if="state.modelGuideModalVisible"
+				class="p-2"
+			>
+				<div>右键拖动： 旋转物体</div>
+				<div>右键拖动： 移动相机视角</div>
+				<div>滚轮： 缩放物体</div>
+			</div>
 
-			<div v-if="renderItemRef?.data.model_json">
-				<!-- 使用循环只是为了减少调用链长度 -->
-				<template v-for="item_json of renderItemRef?.data.item_json ? [renderItemRef?.data.item_json] : []">
-					物品信息：
-					<ul style="padding-left: 20px">
-						<li>是否启用：{{ item_json.enabled }}</li>
-						<li v-if="item_json.behaviours.furniture_sit">
-							坐骑高度：{{ item_json.behaviours.furniture_sit.sit_height }}
-						</li>
-						<li>光亮等级：{{ item_json.behaviours.furniture.light_level }}</li>
-						<li>
-							放置类型：{{
-								Object.keys(item_json.behaviours.furniture.placeable_on)
-									.filter((k) => item_json.behaviours.furniture.placeable_on[k])
-									.join(' , ')
-							}}
-						</li>
-						<li v-if="item_json.behaviours.furniture.hitbox">
-							hitbox：{{ JSON.stringify(item_json.behaviours.furniture.hitbox) }}
-						</li>
-					</ul>
-				</template>
+			<div
+				v-if="state.detailsModalVisible"
+				class="p-2"
+			>
+				<div>名称：{{ renderItemRef?.displayname }}</div>
+				<div>路径：{{ '/' + renderItemRef?.parents.join('/') }}</div>
+				<div>文件路径：{{ renderItemRef?.filename }}</div>
+				<div>配置文件：{{ renderItemRef?.data.config_filepath }}</div>
+
+				<div v-if="renderItemRef?.data.model_json">
+					<!-- 使用循环只是为了减少调用链长度 -->
+					<template v-for="item_json of renderItemRef?.data.item_json ? [renderItemRef?.data.item_json] : []">
+						物品信息：
+						<ul style="padding-left: 20px">
+							<li>是否启用：{{ item_json.enabled }}</li>
+							<li v-if="item_json.behaviours.furniture_sit">
+								坐骑高度：{{ item_json.behaviours.furniture_sit.sit_height }}
+							</li>
+							<li>光亮等级：{{ item_json.behaviours.furniture.light_level }}</li>
+							<li>
+								放置类型：{{
+									Object.keys(item_json.behaviours.furniture.placeable_on)
+										.filter((k) => item_json.behaviours.furniture.placeable_on[k])
+										.join(' , ')
+								}}
+							</li>
+							<li v-if="item_json.behaviours.furniture.hitbox">
+								hitbox：{{ JSON.stringify(item_json.behaviours.furniture.hitbox) }}
+							</li>
+						</ul>
+					</template>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -159,7 +185,8 @@ const currentPixelWidth = ref(getPixelWidth());
 const state = reactive({
 	show_pixel_border: false,
 	current_select_color: '',
-	detailsModalVisible: false
+	detailsModalVisible: false,
+	modelGuideModalVisible: false
 });
 
 const modelRenderer = new McModelRenderer({
@@ -235,6 +262,16 @@ function rgbaToHex(rgba: string) {
 }
 function showDetails() {
 	state.detailsModalVisible = !state.detailsModalVisible;
+}
+
+function showModelGuide() {
+	state.modelGuideModalVisible = !state.modelGuideModalVisible;
+}
+
+function oncModelContextmenu(e: Event) {
+	// 阻止显示默认的菜单
+	e.preventDefault();
+	e.stopPropagation();
 }
 </script>
 

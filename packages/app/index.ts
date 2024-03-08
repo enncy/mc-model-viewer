@@ -50,7 +50,7 @@ async function bootstrap() {
 	if (app.isPackaged) {
 		await window.loadFile('./public/index.html');
 	} else {
-		await window.loadURL('http://localhost:3000/new');
+		await window.loadURL('http://localhost:3000/');
 		window.webContents.openDevTools();
 	}
 

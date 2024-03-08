@@ -29,6 +29,7 @@ export const store = reactive({
 		blockbench_path: '',
 		vscode_path: ''
 	},
+	current_folder_render_info_name: '',
 	current_asset_folder_name: '',
 	asset_folders: [] as AssetFolderInfo[]
 });
