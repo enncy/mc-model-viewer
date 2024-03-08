@@ -1,12 +1,16 @@
 <template>
-	<div ref="renderContainer">
+	<div
+		ref="renderContainer"
+		class="h-full"
+	>
 		<div
 			ref="headerContainer"
 			class="header-container"
+			style="display: none"
 		>
-			<div class="header">Items-Adder-Preview</div>
+			<div class="header">MC Model Viewer</div>
 		</div>
-		<div class="body-container">
+		<div class="body-container h-full">
 			<a-config-provider :locale="zhCN">
 				<router-view v-slot="{ Component }">
 					<keep-alive>
@@ -23,9 +27,25 @@ import { onMounted, ref, nextTick } from 'vue';
 import { requireElectronContext, isElectronEnv } from './utils/remote';
 // @ts-ignore
 import zhCN from '@arco-design/web-vue/es/locale/lang/zh-CN';
+import { Message } from '@arco-design/web-vue';
 
 const headerContainer = ref<HTMLDivElement>();
 const renderContainer = ref<HTMLDivElement>();
+
+window.onerror = (message, source, lineno, colno, error) => {
+	console.error(message, source, lineno, colno, error);
+	Message.error('发生未知错误 ： ' + message);
+};
+
+requireElectronContext(({ ipcRenderer }) => {
+	ipcRenderer.on('show-custom-title-bar', () => {
+		if (!headerContainer.value) {
+			return;
+		}
+		headerContainer.value.style.display = 'flex';
+		renderContainer.value?.classList.add('base-container');
+	});
+});
 
 onMounted(() => {
 	nextTick(() => {
@@ -33,17 +53,7 @@ onMounted(() => {
 			return;
 		}
 
-		if (isElectronEnv()) {
-			requireElectronContext(({ remote }) => {
-				if (remote.getCurrentWindow().isMenuBarVisible()) {
-					if (!headerContainer.value) {
-						return;
-					}
-					headerContainer.value.style.display = 'none';
-					renderContainer.value?.classList.add('base-container');
-				}
-			});
-		} else {
+		if (isElectronEnv() === false) {
 			headerContainer.value.style.display = 'flex';
 			renderContainer.value?.classList.add('custom-title-container');
 		}

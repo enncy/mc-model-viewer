@@ -2,6 +2,7 @@ import { ParsedItemAdderItemData } from './interface';
 import { McModelRenderer } from './model-viewer';
 import { renderParsedModel } from './model-viewer/utils';
 import { sleep } from './index';
+import * as THREE from 'three';
 
 /**
  * 预览器
@@ -50,6 +51,52 @@ export class Previewer {
 		}
 	}
 
+	getObject3DDataURL(
+		object: THREE.Object3D,
+		options?: {
+			/** 自动将相机调整至可以看到整个模型的位置 */
+			auto_camera?: boolean;
+			/** 显示辅助平台网格 */
+			show_grid?: boolean;
+			/** 显示坐标系 */
+			show_axes?: boolean;
+		}
+	) {
+		return new Promise<string>((resolve, reject) => {
+			this.waitForRenderer()
+				.then(async (renderer) => {
+					await renderer.showLight();
+					await renderer.add(object);
+
+					if (options?.show_grid) {
+						await renderer.showGridHelper();
+					}
+
+					if (options?.show_axes) {
+						await renderer.showAxesHelper();
+					}
+
+					if (options?.auto_camera) {
+						const box = new THREE.Box3().setFromObject(object);
+						const max = Math.max(box.max.x, box.max.y, box.max.z);
+
+						renderer.camera.position.x = -16 - 16 * (max / 16);
+						renderer.camera.position.y = 16 + 16 * (max / 16);
+						renderer.camera.position.z = -16 - 16 * (max / 16);
+					}
+					const canvas = renderer.renderer.domElement;
+					await sleep(10);
+					if (canvas) {
+						// 保存截图
+						resolve(canvas.toDataURL());
+					}
+					renderer.removeAll();
+					this.renderer.push(renderer);
+				})
+				.catch(reject);
+		});
+	}
+
 	waitForRenderer() {
 		return new Promise<McModelRenderer>((resolve, reject) => {
 			const timer = setInterval(() => {
@@ -68,3 +115,5 @@ export class Previewer {
 		});
 	}
 }
+
+export const previewer = new Previewer();

@@ -3,6 +3,7 @@ import { reactive, watch } from 'vue';
 import merge from 'lodash/merge';
 import { requireElectronContext } from '@/utils/remote';
 import { Message } from '@arco-design/web-vue';
+import { AssetFolderInfo } from '@/utils/core/workspace';
 
 export const store = reactive({
 	current_workspace_name: '',
@@ -27,7 +28,9 @@ export const store = reactive({
 		},
 		blockbench_path: '',
 		vscode_path: ''
-	}
+	},
+	current_asset_folder_name: '',
+	asset_folders: [] as AssetFolderInfo[]
 });
 
 watch(
@@ -62,6 +65,7 @@ if (store.setting.vscode_path === '') {
 		Message.success('VSCode路径已自动设置');
 	});
 }
+
 function requireThirdPartAppPath(dir_name: string, app_name: string, callback: (path: string) => any) {
 	requireElectronContext(({ child_process, path, remote }) => {
 		if (process.platform === 'win32') {

@@ -79,10 +79,10 @@ export class McModelRenderer {
 		return this;
 	}
 
-	resize() {
-		this.camera.aspect = this.options.width / this.options.height;
+	resize(width: number, height: number) {
+		this.camera.aspect = width / height;
+		this.renderer.setSize(width, height);
 		this.camera.updateProjectionMatrix();
-		this.renderer.setSize(this.options.width, this.options.height);
 
 		return this;
 	}

@@ -1,5 +1,5 @@
 import { app } from 'electron';
-import { createMainWindow } from './src/utils';
+import { createWindow } from './src/utils';
 import path from 'path';
 import { registerIpc } from './src/ipc';
 import { registerMenu } from './src/utils/register.menu';
@@ -9,7 +9,7 @@ const ElectronRemote = require('@electron/remote/main') as typeof import('@elect
 ElectronRemote.initialize();
 
 // 设置应用名称
-app.setName('items-adder-preview');
+app.setName('MC Model Viewer');
 
 /** 获取单进程锁 */
 const gotTheLock = app.requestSingleInstanceLock();
@@ -26,9 +26,7 @@ async function bootstrap() {
 	// 等待 app 准备完成
 	await app.whenReady();
 	// 创建窗口
-	const window = createMainWindow({
-		title: 'items-adder-preview',
-		icon: path.resolve('./public/favicon.ico'),
+	const window = createWindow({
 		// 是否隐藏标题栏
 		hideTitleBar: false,
 		// 处理链接跳转
@@ -52,7 +50,7 @@ async function bootstrap() {
 	if (app.isPackaged) {
 		await window.loadFile('./public/index.html');
 	} else {
-		await window.loadURL('http://localhost:3000');
+		await window.loadURL('http://localhost:3000/new');
 		window.webContents.openDevTools();
 	}
 

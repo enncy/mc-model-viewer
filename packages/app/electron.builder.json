@@ -5,7 +5,7 @@
 		"name": "MC Model Viewer",
 		"description": "mc-model-viewer"
 	},
-	"productName": "items-adder-preview",
+	"productName": "MC Model Viewer",
 	"asar": false,
 	"copyright": "Copyright © 2021 enncy",
 	"nsis": {
@@ -13,7 +13,7 @@
 	},
 	"win": {
 		"icon": "public/img/favicon.png",
-		"artifactName": "items-adder-preview-${version}-setup-${os}-${arch}.${ext}",
+		"artifactName": "MC Model Viewer-${version}-setup-${os}-${arch}.${ext}",
 		"target": [
 			{
 				"target": "nsis",
@@ -23,7 +23,7 @@
 	},
 	"mac": {
 		"icon": "public/img/favicon.icns",
-		"artifactName": "items-adder-preview-${version}-setup-${os}-${arch}.${ext}",
+		"artifactName": "MC Model Viewer-${version}-setup-${os}-${arch}.${ext}",
 		"target": [
 			{
 				"target": "zip",
@@ -37,7 +37,7 @@
 	},
 	"linux": {
 		"icon": "public/img/favicon.png",
-		"artifactName": "items-adder-preview-${version}-setup-${os}-${arch}.${ext}",
+		"artifactName": "MC Model Viewer-${version}-setup-${os}-${arch}.${ext}",
 		"target": [
 			{
 				"target": "AppImage",

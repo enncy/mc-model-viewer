@@ -22,5 +22,8 @@
 	},
 	"editor.wordBasedSuggestions": "off",
 	"typescript.tsdk": "node_modules\\typescript\\lib",
-	"cSpell.words": ["blockbench", "itemsadder"]
+	"cSpell.words": ["blockbench", "itemsadder"],
+	"[vue]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	}
 }

@@ -1,11 +1,62 @@
 import { BrowserWindow, Menu, MenuItemConstructorOptions, ipcMain } from 'electron';
+import { createWindow } from '../utils';
 
 export function registerIpc() {
-	ipcMain.on('create-window', (e, url) => {
-		const win = new BrowserWindow({});
-		console.log(url);
-		win.loadURL(url);
+	ipcMain.on('create-window', async (e, url, { title, height, width, minHeight, minWidth, hideTitleBar }) => {
+		// 创建窗口
+		const win = createWindow({
+			title: title,
+			// 是否隐藏标题栏
+			hideTitleBar: hideTitleBar,
+			// 处理链接跳转
+			handleOpenExternal: true,
+			// 启用 remote 模块
+			enableRemoteModule: true,
+			height: height,
+			width: width,
+			minHeight: minHeight,
+			minWidth: minWidth
+		});
+		await win.loadURL(url);
+
+		win.removeMenu();
+
+		win.webContents.on('did-finish-load', () => {
+			win.show();
+		});
 	});
+
+	/**
+	 * 创建窗口，并通过 ipc 传递数据参数，用于大量数据传递无法通过 url params 传递的情况
+	 */
+	ipcMain.on(
+		'create-window-with-args',
+		async (e, url, { title, height, width, minHeight, minWidth, hideTitleBar }, ...args) => {
+			// 创建窗口
+			const win = createWindow({
+				title: title,
+				// 是否隐藏标题栏
+				hideTitleBar: hideTitleBar,
+				// 处理链接跳转
+				handleOpenExternal: true,
+				// 启用 remote 模块
+				enableRemoteModule: true,
+				height: height,
+				width: width,
+				minHeight: minHeight,
+				minWidth: minWidth
+			});
+
+			await win.loadURL(url);
+
+			win.removeMenu();
+
+			win.webContents.on('did-finish-load', () => {
+				win.webContents.send('args', ...args);
+				win.show();
+			});
+		}
+	);
 
 	// 显示复制粘贴菜单栏
 	ipcMain.on('show-context-menu', (event) => {
@@ -46,6 +97,12 @@ export function registerIpc() {
 				accelerator: 'CmdOrCtrl+R',
 				click(menuItem, browserWindow, event) {
 					browserWindow?.webContents.reload();
+				}
+			},
+			{
+				label: '开发者工具',
+				click(menuItem, browserWindow, event) {
+					browserWindow?.webContents.toggleDevTools();
 				}
 			}
 		];

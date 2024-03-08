@@ -1,20 +1,25 @@
 import { BrowserWindow, shell } from 'electron';
+import path from 'path';
 const ElectronRemote = require('@electron/remote/main') as typeof import('@electron/remote/main');
 
-export function createMainWindow(options: {
+export function createWindow(options: {
 	hideTitleBar?: boolean;
-	title: string;
-	icon: string;
+	title?: string;
+	icon?: string;
 	handleOpenExternal: boolean;
 	enableRemoteModule: boolean;
+	minHeight?: number;
+	minWidth?: number;
+	width?: number;
+	height?: number;
 }) {
 	const win = new BrowserWindow({
 		title: options.title,
-		icon: options.icon,
-		minHeight: 800,
-		minWidth: 1200,
-		width: 1200,
-		height: 800,
+		icon: options.icon || path.resolve('../../public/favicon.ico'),
+		minHeight: options.minHeight ?? 800,
+		minWidth: options.minWidth ?? 1200,
+		width: options.width ?? 1200,
+		height: options.height ?? 800,
 		center: true,
 		hasShadow: true,
 		...(options.hideTitleBar
@@ -41,6 +46,13 @@ export function createMainWindow(options: {
 		}
 	});
 
+	if (options.hideTitleBar) {
+		win.removeMenu();
+		win.webContents.once('did-finish-load', () => {
+			win.webContents.emit('show-custom-title-bar');
+		});
+	}
+
 	if (options.handleOpenExternal) {
 		win.webContents.on('will-navigate', (event, url) => {
 			event.preventDefault();
@@ -60,7 +72,7 @@ export function createMainWindow(options: {
 		ElectronRemote.enable(win.webContents);
 	}
 
+	win.removeMenu();
+
 	return win;
 }
-
-export function createCustomWindow() {}

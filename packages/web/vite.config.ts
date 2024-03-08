@@ -12,7 +12,7 @@ export default defineConfig({
 		outDir: '../app/public'
 	},
 	server: {
-		open: false
+		open: 'none'
 	},
 	base: '',
 	resolve: {
