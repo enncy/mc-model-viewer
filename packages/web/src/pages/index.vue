@@ -347,9 +347,10 @@ async function render(render_item: RenderItem) {
 		}
 
 		ipcRenderer.send(
-			'create-window-with-args',
+			'open-renderer-with-args',
 			location.origin + path,
 			{
+				filename: render_item.filename,
 				title: render_item.displayname,
 				width: 1000,
 				height: 800,

@@ -1,4 +1,3 @@
-import { WorkspaceOptions } from '@/utils/workspace';
 import { reactive, watch } from 'vue';
 import merge from 'lodash/merge';
 import { requireElectronContext } from '@/utils/remote';
@@ -7,7 +6,6 @@ import { AssetFolderInfo } from '@/utils/core/workspace';
 
 export const store = reactive({
 	current_workspace_name: '',
-	workspaces: [] as WorkspaceOptions[],
 	setting: {
 		workspace: {
 			/**

@@ -1,6 +1,4 @@
-import { ParsedItemAdderItemData } from './interface';
 import { McModelRenderer } from './model-viewer';
-import { renderParsedModel } from './model-viewer/utils';
 import { sleep } from './index';
 import * as THREE from 'three';
 
@@ -23,31 +21,6 @@ export class Previewer {
 	dispose() {
 		for (const renderer of this.renderer) {
 			renderer.renderer.dispose();
-		}
-	}
-
-	getDataURL(parsed_data: ParsedItemAdderItemData) {
-		const parsed_model = parsed_data.model;
-		if (parsed_model?.content) {
-			return new Promise<string>((resolve, reject) => {
-				this.waitForRenderer()
-					.then(async (renderer) => {
-						await renderParsedModel(renderer, parsed_model, { auto_camera: true });
-						const canvas = renderer.renderer.domElement;
-						await sleep(10);
-						if (canvas) {
-							// 保存截图
-							resolve(canvas.toDataURL());
-						}
-						renderer.removeAll();
-						this.renderer.push(renderer);
-					})
-					.catch(reject);
-			});
-		} else if (parsed_data.textures?.length) {
-			return parsed_data.textures[0].base64;
-		} else {
-			return undefined;
 		}
 	}
 

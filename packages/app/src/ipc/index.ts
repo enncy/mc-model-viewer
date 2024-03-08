@@ -26,12 +26,20 @@ export function registerIpc() {
 		});
 	});
 
+	const rendererWinMap = new Map<string, BrowserWindow>();
+
 	/**
-	 * 创建窗口，并通过 ipc 传递数据参数，用于大量数据传递无法通过 url params 传递的情况
+	 * 创建渲染窗口，并通过 ipc 传递数据参数，用于大量数据传递无法通过 url params 传递的情况
 	 */
 	ipcMain.on(
-		'create-window-with-args',
-		async (e, url, { title, height, width, minHeight, minWidth, hideTitleBar }, ...args) => {
+		'open-renderer-with-args',
+		async (e, url, { filename, title, height, width, minHeight, minWidth, hideTitleBar }, ...args) => {
+			const opened = rendererWinMap.get(filename);
+			if (opened) {
+				// 置顶窗口
+				return opened.moveTop();
+			}
+
 			// 创建窗口
 			const win = createWindow({
 				title: title,
@@ -48,6 +56,8 @@ export function registerIpc() {
 			});
 
 			await win.loadURL(url);
+
+			rendererWinMap.set(filename, win);
 
 			win.removeMenu();
 

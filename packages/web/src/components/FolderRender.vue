@@ -1,3 +1,4 @@
+<!-- eslint-disable vue/no-v-html -->
 <template>
 	<div>
 		<div class="folder-preview-container">
@@ -19,7 +20,7 @@
 							</div>
 						</a-col>
 						<a-col class="text-center mt-1">
-							{{ item.displayname }}
+							<span v-html="colored(item.displayname)"></span>
 						</a-col>
 					</a-row>
 				</div>
@@ -43,6 +44,7 @@
 <script setup lang="ts">
 import { FolderRenderInfo, RenderItem } from '@/utils/core/renderer';
 import FolderRender from './FolderRender.vue';
+import { colored } from '@/utils/color';
 
 defineProps<{
 	folderRenderInfo: FolderRenderInfo;
