@@ -1,33 +1,53 @@
 @font-face {
-	font-family: minecraftia;
-	font-style: normal;
-	font-weight: 400;
-	src: local('Minecraftia'), url(../fonts/Minecraftia.woff) format('woff');
+  font-family: minecraftia;
+  font-style: normal;
+  font-weight: 400;
+  src: local('Minecraftia'), url(../fonts/Minecraftia.woff) format('woff');
 }
 body,
 html,
 #app {
-	margin: 0;
-	padding: 0;
-	width: 100%;
-	height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
 }
 /** 兼容 win11 以下的软件不会自动带有阴影和边框 */
 html.window-frame {
-	border: 1px solid #e1e1e1;
-	overflow: hidden;
-	box-shadow: 0px 0px 12px #d3d3d3;
+  border: 1px solid #e1e1e1;
+  overflow: hidden;
+  box-shadow: 0px 0px 12px #d3d3d3;
 }
 #app {
-	font-family: Avenir, Helvetica, Arial, sans-serif;
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 body[class*='platform'] .workspace-modal-details .arco-modal-fullscreen {
-	top: 0 !important;
-	height: 100% !important;
+  top: 0 !important;
+  height: 100% !important;
 }
 body .workspace-modal-details .arco-modal-fullscreen {
-	top: 32px;
-	height: calc(100% - 32px);
+  top: 32px;
+  height: calc(100% - 32px);
+}
+.minecraft-lores-container {
+  border: 2px solid black;
+  width: fit-content;
+  border-radius: 4px;
+}
+.minecraft-lores {
+  border-top: 2px solid #290560;
+  border-bottom: 2px solid #1a043b;
+  border-left: 2px solid #1a043b;
+  border-right: 2px solid #1a043b;
+  background-color: #100116;
+  line-height: 18px;
+  font-size: 16px;
+  letter-spacing: 2px;
+  padding: 2px 4px 4px 4px;
+  width: fit-content;
+}
+.minecraft-lores * {
+  font-family: 'Minecraftia', sans-serif;
 }

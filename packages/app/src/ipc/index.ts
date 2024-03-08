@@ -36,8 +36,10 @@ export function registerIpc() {
 		async (e, url, { filename, title, height, width, minHeight, minWidth, hideTitleBar }, ...args) => {
 			const opened = rendererWinMap.get(filename);
 			if (opened) {
-				// 置顶窗口
-				return opened.moveTop();
+				if (opened.isDestroyed() === false) {
+					// 置顶窗口
+					return opened.moveTop();
+				}
 			}
 
 			// 创建窗口
@@ -58,8 +60,6 @@ export function registerIpc() {
 			await win.loadURL(url);
 
 			rendererWinMap.set(filename, win);
-
-			win.removeMenu();
 
 			win.webContents.on('did-finish-load', () => {
 				win.webContents.send('args', ...args);

@@ -67,6 +67,7 @@
 				ref="pixelRenderSlotRef"
 				class="pixel-render-slot"
 				@click="state.current_select_color = ''"
+				@wheel="onPixelWheel"
 			>
 				<div
 					v-if="pixel_data"
@@ -108,6 +109,7 @@
 			<div
 				v-if="state.current_select_color"
 				class="p-1"
+				style="color: #b3b1b1"
 			>
 				<div>
 					<div>rgba : {{ state.current_select_color }}</div>
@@ -118,6 +120,7 @@
 			<div
 				v-if="state.modelGuideModalVisible"
 				class="p-1"
+				style="color: #b3b1b1"
 			>
 				<div>右键拖动： 旋转物体</div>
 				<div>右键拖动： 移动相机视角</div>
@@ -154,14 +157,15 @@ const renderItemRef = ref<RenderItem>();
 
 const pixel_data = ref<PixelData>();
 
-const currentPixelWidth = ref(getPixelWidth());
-
 const state = reactive({
 	show_pixel_border: false,
+	pixel_scale: 1,
 	current_select_color: '',
 	detailsModalVisible: false,
 	modelGuideModalVisible: false
 });
+
+const currentPixelWidth = ref(getPixelWidth(1));
 
 const modelRenderer = new McModelRenderer({
 	width: window.document.documentElement.clientWidth,
@@ -204,7 +208,8 @@ ipcRenderer.on('args', async (e, { render_item: _render_item, asset_folder }) =>
 
 			const pixelElResize = throttle(() => {
 				if (pixelRenderSlotRef.value) {
-					currentPixelWidth.value = getPixelWidth();
+					state.pixel_scale = 1;
+					currentPixelWidth.value = getPixelWidth(state.pixel_scale);
 					pixelRenderSlotRef.value.style.width = window.document.documentElement.clientWidth + 'px';
 					pixelRenderSlotRef.value.style.height = window.document.documentElement.clientHeight - 40 + 'px';
 				}
@@ -216,8 +221,11 @@ ipcRenderer.on('args', async (e, { render_item: _render_item, asset_folder }) =>
 	}
 });
 
-function getPixelWidth() {
-	return Math.min(window.document.documentElement.clientWidth, window.document.documentElement.clientHeight) - 100;
+function getPixelWidth(pixel_scale: number) {
+	return (
+		(Math.min(window.document.documentElement.clientWidth, window.document.documentElement.clientHeight) - 100) *
+		pixel_scale
+	);
 }
 
 function rgbaToHex(rgba: string) {
@@ -230,8 +238,6 @@ function rgbaToHex(rgba: string) {
 	const green = parseInt(match[2]).toString(16).padStart(2, '0');
 	const blue = parseInt(match[3]).toString(16).padStart(2, '0');
 	const alpha = Math.round(parseInt(match[4])).toString(16).padStart(2, '0');
-	console.log(red, green, blue, alpha);
-
 	return `#${red}${green}${blue}${alpha}`;
 }
 function showDetails() {
@@ -246,6 +252,29 @@ function oncModelContextmenu(e: Event) {
 	// 阻止显示默认的菜单
 	e.preventDefault();
 	e.stopPropagation();
+}
+
+function onPixelWheel(e: WheelEvent) {
+	let temp_pixel_scale = state.pixel_scale;
+	if (e.deltaY > 0) {
+		temp_pixel_scale -= 0.1;
+	} else {
+		temp_pixel_scale += 0.1;
+	}
+
+	temp_pixel_scale = Math.max(0.1, temp_pixel_scale);
+	temp_pixel_scale = Math.min(2, temp_pixel_scale);
+
+	const width = getPixelWidth(temp_pixel_scale);
+
+	// 计算如果将要超出屏幕，就不再放大
+	if (width > Math.min(window.document.documentElement.clientWidth, window.document.documentElement.clientHeight)) {
+		return;
+	} else {
+		state.pixel_scale = temp_pixel_scale;
+	}
+
+	currentPixelWidth.value = width;
 }
 </script>
 
@@ -290,6 +319,5 @@ function oncModelContextmenu(e: Event) {
 	top: 40px;
 	background-color: #67616121;
 	overflow: hidden;
-	color: #b3b1b1;
 }
 </style>

@@ -47,12 +47,10 @@ export function createWindow(options: {
 	});
 
 	if (options.hideTitleBar) {
-		win.removeMenu();
 		win.webContents.once('did-finish-load', () => {
 			win.webContents.emit('show-custom-title-bar');
 		});
 	}
-
 	if (options.handleOpenExternal) {
 		win.webContents.on('will-navigate', (event, url) => {
 			event.preventDefault();
@@ -72,6 +70,7 @@ export function createWindow(options: {
 		ElectronRemote.enable(win.webContents);
 	}
 
+	// 强制删除，缩放功能会对多个窗口造成影响
 	win.removeMenu();
 
 	return win;

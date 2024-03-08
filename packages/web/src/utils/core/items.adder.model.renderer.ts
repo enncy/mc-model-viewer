@@ -198,9 +198,9 @@ export class ItemsAdderFolderRenderer implements FolderRenderer {
 			const box = new THREE.Box3().setFromObject(object);
 			const max = Math.max(box.max.x, box.max.y, box.max.z);
 
-			renderer.camera.position.x = -16 - 16 * (max / 16);
-			renderer.camera.position.y = 16 + 16 * (max / 16);
-			renderer.camera.position.z = -16 - 16 * (max / 16);
+			renderer.camera.position.x = -8 * (max / 8);
+			renderer.camera.position.y = 16 + 8 * (max / 8);
+			renderer.camera.position.z = -8 * (max / 8);
 
 			return renderer.renderer.domElement;
 		} else if (render_item.data.texture) {
@@ -275,7 +275,7 @@ export class ItemsAdderFolderRenderer implements FolderRenderer {
 								screenshot: texture_asset.content,
 								filename: texture_asset.filepath,
 								displayname: item_json.display_name,
-								parents: [config_json.info.namespace, 'textures'],
+								parents: [config_json.info.namespace, 'items'],
 								data: { config_json, item_json, texture: texture_asset.content }
 							});
 						}
@@ -382,9 +382,9 @@ async function createMcModel(name: string, model_data: ModelJson, parsed_texture
 		const length = element.to[2] - element.from[2];
 
 		const origin = {
-			x: (element.to[0] + element.from[0]) / 2 + McModelRenderer.COMMON_POSITION_OFFSET,
-			y: (element.to[1] + element.from[1]) / 2 + McModelRenderer.COMMON_POSITION_OFFSET,
-			z: (element.to[2] + element.from[2]) / 2 + McModelRenderer.COMMON_POSITION_OFFSET
+			x: (element.to[0] + element.from[0]) / 2 + 0,
+			y: (element.to[1] + element.from[1]) / 2 + 0,
+			z: (element.to[2] + element.from[2]) / 2 + 0
 		};
 
 		// if a value happens to be 0, the geometry becomes a plane and will have 4 vertices instead of 12.

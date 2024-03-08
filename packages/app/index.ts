@@ -2,7 +2,6 @@ import { app } from 'electron';
 import { createWindow } from './src/utils';
 import path from 'path';
 import { registerIpc } from './src/ipc';
-import { registerMenu } from './src/utils/register.menu';
 
 const ElectronRemote = require('@electron/remote/main') as typeof import('@electron/remote/main');
 // 初始化 remote 模块
@@ -16,8 +15,6 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
 	app.quit();
 } else {
-	// 注册菜单栏
-	registerMenu();
 	bootstrap();
 }
 
@@ -53,7 +50,6 @@ async function bootstrap() {
 		await window.loadURL('http://localhost:3000/');
 		window.webContents.openDevTools();
 	}
-
 	// 加载完成显示，解决一系列的显示/黑屏问题
 	window.show();
 

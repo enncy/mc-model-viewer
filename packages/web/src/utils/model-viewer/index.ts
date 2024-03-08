@@ -29,7 +29,6 @@ export class McModelRenderer {
 	camera: THREE.PerspectiveCamera;
 	controls: OrbitControls;
 	// 渲染时的默认偏移位置
-	public static COMMON_POSITION_OFFSET = -8;
 
 	constructor(options: McModelRendererOptions) {
 		this.options = options;
@@ -49,11 +48,14 @@ export class McModelRenderer {
 		this.camera.position.x = -16;
 		this.camera.position.y = 16;
 		this.camera.position.z = -16;
-
 		/**
 		 * 轨道控制器
 		 */
 		this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+
+		// 设置控制器的视野看向的位置
+		this.controls.target.set(8, 8, 8);
+
 		this.controls.enableDamping = true;
 		this.controls.dampingFactor = 0.2;
 		this.controls.zoomSpeed = 1.4;
@@ -127,7 +129,9 @@ export class McModelRenderer {
 		gridHelper.name = 'grid';
 		gridHelper.material.opacity = 0.2;
 		gridHelper.material.transparent = true;
-		gridHelper.position.y = McModelRenderer.COMMON_POSITION_OFFSET;
+		gridHelper.position.y = 0;
+		gridHelper.position.x = 8;
+		gridHelper.position.z = 8;
 		await this.add(gridHelper);
 
 		// 网格辅助
@@ -135,19 +139,21 @@ export class McModelRenderer {
 		biggerGridHelper.name = 'bigger-grid';
 		biggerGridHelper.material.opacity = 0.2;
 		biggerGridHelper.material.transparent = true;
-		biggerGridHelper.position.y = McModelRenderer.COMMON_POSITION_OFFSET;
+		biggerGridHelper.position.y = 0;
+		biggerGridHelper.position.x = 8;
+		biggerGridHelper.position.z = 8;
 		await this.add(biggerGridHelper);
 
 		// 箭头
 		const arrow = new THREE.BufferGeometry();
 		const positions = new Float32Array(
 			[
-				[-1, McModelRenderer.COMMON_POSITION_OFFSET, -9],
-				[1, McModelRenderer.COMMON_POSITION_OFFSET, -9],
-				[1, McModelRenderer.COMMON_POSITION_OFFSET, -9],
-				[0, McModelRenderer.COMMON_POSITION_OFFSET, -10],
-				[0, McModelRenderer.COMMON_POSITION_OFFSET, -10],
-				[-1, McModelRenderer.COMMON_POSITION_OFFSET, -9]
+				[7, 0, -1],
+				[9, 0, -1],
+				[9, 0, -1],
+				[8, 0, -2],
+				[8, 0, -2],
+				[7, 0, -1]
 			].flat()
 		);
 		arrow.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -179,9 +185,9 @@ export class McModelRenderer {
 		// 坐标轴辅助
 		const axesHelper = new THREE.AxesHelper(100);
 		axesHelper.name = 'axes';
-		axesHelper.position.x = McModelRenderer.COMMON_POSITION_OFFSET;
-		axesHelper.position.y = McModelRenderer.COMMON_POSITION_OFFSET;
-		axesHelper.position.z = McModelRenderer.COMMON_POSITION_OFFSET;
+		axesHelper.position.x = 0;
+		axesHelper.position.y = 0;
+		axesHelper.position.z = 0;
 		await this.add(axesHelper);
 		return this;
 	}
@@ -249,9 +255,9 @@ export async function createMcModel(
 		const length = element.to[2] - element.from[2];
 
 		const origin = {
-			x: (element.to[0] + element.from[0]) / 2 + McModelRenderer.COMMON_POSITION_OFFSET,
-			y: (element.to[1] + element.from[1]) / 2 + McModelRenderer.COMMON_POSITION_OFFSET,
-			z: (element.to[2] + element.from[2]) / 2 + McModelRenderer.COMMON_POSITION_OFFSET
+			x: (element.to[0] + element.from[0]) / 2,
+			y: (element.to[1] + element.from[1]) / 2,
+			z: (element.to[2] + element.from[2]) / 2
 		};
 
 		// if a value happens to be 0, the geometry becomes a plane and will have 4 vertices instead of 12.

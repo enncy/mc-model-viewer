@@ -53,9 +53,9 @@ export class Previewer {
 						const box = new THREE.Box3().setFromObject(object);
 						const max = Math.max(box.max.x, box.max.y, box.max.z);
 
-						renderer.camera.position.x = -16 - 16 * (max / 16);
-						renderer.camera.position.y = 16 + 16 * (max / 16);
-						renderer.camera.position.z = -16 - 16 * (max / 16);
+						renderer.camera.position.x = -8 * (max / 8);
+						renderer.camera.position.y = 16 + 8 * (max / 8);
+						renderer.camera.position.z = -8 * (max / 8);
 					}
 					const canvas = renderer.renderer.domElement;
 					await sleep(10);
