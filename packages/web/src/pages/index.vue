@@ -83,7 +83,7 @@
 			</a-spin>
 		</div>
 		<div
-			v-if="folder_render_infos.length"
+			v-if="render_groups.length"
 			class="h-full"
 		>
 			<a-row class="h-full flex-nowrap">
@@ -92,16 +92,16 @@
 					class="h-full me-2 border-r-2 overflow-auto"
 				>
 					<template
-						v-for="(folder, index) of folder_render_infos"
+						v-for="(folder, index) of render_groups"
 						:key="index"
 					>
 						<div
 							class="folder text-lg"
-							:class="{ current: state.current_folder_render_info?.name === folder.name }"
+							:class="{ current: state.current_render_group?.name === folder.name }"
 							@click="
 								() => {
-									state.current_folder_render_info = folder;
-									store.current_folder_render_info_name = folder.name;
+									state.current_render_group = folder;
+									store.current_render_group_name = folder.name;
 								}
 							"
 						>
@@ -115,11 +115,11 @@
 					flex="auto"
 					class="h-full overflow-auto p-2"
 				>
-					<FolderRender
-						v-if="state.current_folder_render_info"
-						:folder-render-info="state.current_folder_render_info"
+					<FolderPreview
+						v-if="state.current_render_group"
+						:render-group="state.current_render_group"
 						@render="render"
-					></FolderRender>
+					></FolderPreview>
 				</a-col>
 			</a-row>
 		</div>
@@ -130,11 +130,11 @@
 				class="h-full flex justify-center items-center"
 			>
 				<a-empty
-					v-if="state.current_folder_render_info === undefined"
+					v-if="state.current_render_group === undefined"
 					description="暂无数据，请在右上角新建工作区"
 				/>
 				<a-empty
-					v-else-if="state.current_folder_render_info === null"
+					v-else-if="state.current_render_group === null"
 					description="暂无数据，可能是未读取到资源，请确保工作区的类型一致"
 				/>
 			</div>
@@ -181,13 +181,13 @@
 <script setup lang="ts">
 import { store } from '@/store';
 import { ItemsAdderFolderRenderer } from '@/utils/core/items.adder.model.renderer';
-import { FolderRenderInfo, RenderItem } from '@/utils/core/renderer';
+import { RenderGroup, RenderItem } from '@/utils/core/renderer';
 import { AssetFolder } from '@/utils/core/workspace';
 import { Message } from '@arco-design/web-vue';
 import { onMounted, reactive, ref, watch } from 'vue';
 import { globalAssetFolder, globalFolderRenderer } from '.';
 import { ipcRenderer } from 'electron';
-import FolderRender from '@/components/FolderRender.vue';
+import FolderPreview from '@/components/FolderPreview.vue';
 import Settings from '@/components/Settings.vue';
 import { runIn } from '@/utils/remote';
 
@@ -200,12 +200,12 @@ const state = reactive({
 		name: '',
 		type: ''
 	},
-	current_folder_render_info: undefined as FolderRenderInfo | undefined | null,
+	current_render_group: undefined as RenderGroup | undefined | null,
 	loading: false
 });
 
 const selected_file_list = ref<FileList | undefined>();
-const folder_render_infos = ref<FolderRenderInfo[]>([]);
+const render_groups = ref<RenderGroup[]>([]);
 
 onMounted(async () => {
 	renderPage();
@@ -223,39 +223,41 @@ async function renderPage() {
 
 	try {
 		// 清空数据
-		state.current_folder_render_info = undefined;
-		folder_render_infos.value = [];
+		state.current_render_group = undefined;
+		render_groups.value = [];
 
 		const folder = store.asset_folders.find((f) => f.name === store.current_asset_folder_name);
 
 		if (folder && folder.type) {
 			globalAssetFolder.value = await AssetFolder.deserialize(folder);
 			if (folder.type === 'items-adder') {
-				globalFolderRenderer.value = new ItemsAdderFolderRenderer(globalAssetFolder.value);
+				globalFolderRenderer.value = new ItemsAdderFolderRenderer(globalAssetFolder.value, undefined, {
+					item_preview_size: store.setting.folder_preview.item_default_size
+				});
 			}
 
 			if (globalFolderRenderer.value) {
 				await globalFolderRenderer.value.list((render_item) => {
 					// 递归查找父级文件夹，如果没有则创建
-					const info = initFolder(folder_render_infos.value, render_item.parents);
+					const info = initGroup(render_groups.value, render_item.parents);
 
 					if (info) {
 						info.items.push(render_item);
-						if (state.current_folder_render_info === undefined) {
-							state.current_folder_render_info = info;
+						if (state.current_render_group === undefined) {
+							state.current_render_group = info;
 						}
 					}
 				});
 
-				if (store.current_folder_render_info_name) {
-					const find = folder_render_infos.value.find((f) => f.name === store.current_folder_render_info_name);
+				if (store.current_render_group_name) {
+					const find = render_groups.value.find((f) => f.name === store.current_render_group_name);
 					if (find) {
-						state.current_folder_render_info = find;
+						state.current_render_group = find;
 					}
 				}
 
-				if (state.current_folder_render_info === undefined) {
-					state.current_folder_render_info = null;
+				if (state.current_render_group === undefined) {
+					state.current_render_group = null;
 				}
 			}
 		}
@@ -310,15 +312,15 @@ function removeFolder() {
 }
 
 // 递归查找父级文件夹，如果没有则创建
-function initFolder(folders: FolderRenderInfo[], parents: string[]) {
+function initGroup(groups: RenderGroup[], parents: string[]) {
 	if (parents.length < 1) {
 		return undefined;
 	}
 
-	const folder = folders.find((f) => f.name === parents[0]);
+	const folder = groups.find((f) => f.name === parents[0]);
 	if (folder) {
 		if (parents.length && folder.children.length) {
-			return initFolder(folder.children, parents.slice(1));
+			return initGroup(folder.children, parents.slice(1));
 		} else {
 			return folder;
 		}
@@ -328,39 +330,37 @@ function initFolder(folders: FolderRenderInfo[], parents: string[]) {
 			items: [],
 			children: []
 		};
-		folders.push(init);
+		groups.push(init);
 
 		if (parents.length === 1) {
 			return init;
 		}
 
-		return initFolder(init.children, parents.slice(1));
+		return initGroup(init.children, parents.slice(1));
 	}
 }
 
 async function render(render_item: RenderItem) {
-	if (state.current_folder_render_info) {
-		let path = '';
+	let path = '';
 
-		if (globalAssetFolder.value?.type === 'items-adder') {
-			path = '/items-adder-render';
-		}
-
-		ipcRenderer.send(
-			'open-renderer-with-args',
-			location.origin + path,
-			{
-				filename: render_item.filename,
-				title: render_item.displayname,
-				width: 1000,
-				height: 800,
-				minWidth: 400,
-				minHeight: 400,
-				hideTitleBar: false
-			},
-			{ render_item: JSON.parse(JSON.stringify(render_item)), asset_folder: store.current_asset_folder_name }
-		);
+	if (globalAssetFolder.value?.type === 'items-adder') {
+		path = '/items-adder-render';
 	}
+
+	ipcRenderer.send(
+		'open-renderer-with-args',
+		location.origin + path,
+		{
+			filename: render_item.filename,
+			title: render_item.displayname,
+			width: 800,
+			height: 800,
+			minWidth: 200,
+			minHeight: 200,
+			hideTitleBar: false
+		},
+		{ render_item: JSON.parse(JSON.stringify(render_item)), asset_folder: store.current_asset_folder_name }
+	);
 }
 
 function reload() {

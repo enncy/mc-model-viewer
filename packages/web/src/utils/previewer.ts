@@ -1,6 +1,7 @@
 import { McModelRenderer } from './model-viewer';
 import { sleep } from './index';
 import * as THREE from 'three';
+import { store } from '@/store';
 
 /**
  * 预览器
@@ -8,12 +9,12 @@ import * as THREE from 'three';
 export class Previewer {
 	renderer: McModelRenderer[] = [];
 
-	constructor() {
+	constructor(public model_size: number = 64) {
 		/**
 		 * 开启10个线程渲染，预留6个webGL渲染器给其他地方调用
 		 */
 		for (let index = 0; index < 10; index++) {
-			const renderer = new McModelRenderer({ width: 200, height: 200 });
+			const renderer = new McModelRenderer({ width: model_size, height: model_size });
 			this.renderer.push(renderer);
 		}
 	}
@@ -24,7 +25,7 @@ export class Previewer {
 		}
 	}
 
-	getObject3DDataURL(
+	getImageDataURL(
 		object: THREE.Object3D,
 		options?: {
 			/** 自动将相机调整至可以看到整个模型的位置 */
@@ -89,4 +90,4 @@ export class Previewer {
 	}
 }
 
-export const previewer = new Previewer();
+export const previewer = new Previewer(store.setting.folder_preview.model_default_size);

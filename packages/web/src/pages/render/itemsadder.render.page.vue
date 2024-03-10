@@ -3,60 +3,62 @@
 		style="overflow: hidden"
 		class="render-page"
 	>
-		<a-row
+		<div
 			v-if="renderItemRef"
-			style="min-width: 600px"
 			class="menu-bar"
+			style="min-width: 700px; overflow: hidden; position: absolute"
 		>
-			<a-col flex="auto">
-				<RenderMenu
-					:render-item="renderItemRef"
-					:mc-model-renderer="modelRenderer"
-				>
-					<template #prepend-actions>
-						<template v-if="renderItemRef.data.texture">
-							<a-switch
-								v-model="state.show_pixel_border"
-								checked-text="显示边框"
-								unchecked-text="显示边框"
-							></a-switch>
+			<a-row>
+				<a-col flex="auto">
+					<RenderMenu
+						:render-item="renderItemRef"
+						:mc-model-renderer="modelRenderer"
+					>
+						<template #prepend-actions>
+							<template v-if="renderItemRef.data.texture">
+								<a-switch
+									v-model="state.show_pixel_border"
+									checked-text="显示边框"
+									unchecked-text="显示边框"
+								></a-switch>
 
-							<a-divider
-								direction="vertical"
-								style="margin: 0 4px"
-							/>
+								<a-divider
+									direction="vertical"
+									style="margin: 0 4px"
+								/>
+							</template>
 						</template>
-					</template>
-				</RenderMenu>
-			</a-col>
+					</RenderMenu>
+				</a-col>
 
-			<a-col
-				flex="100px"
-				style="height: 32px"
-				class="flex items-center justify-center"
-			>
-				<a-button
-					size="mini"
-					@click="showDetails"
+				<a-col
+					flex="100px"
+					style="height: 32px"
+					class="flex items-center justify-center"
 				>
-					详情信息 <IconDown />
-				</a-button>
-			</a-col>
-			<a-col
-				v-if="renderItemRef.data.model_json"
-				flex="100px"
-				style="height: 32px"
-				class="flex items-center justify-center"
-			>
-				<a-button
-					size="mini"
-					@click="showModelGuide"
+					<a-button
+						size="mini"
+						@click="showDetails"
+					>
+						详情信息 <IconDown />
+					</a-button>
+				</a-col>
+				<a-col
+					v-if="renderItemRef.data.model_json"
+					flex="100px"
+					style="height: 32px"
+					class="flex items-center justify-center"
 				>
-					操作教程 <IconQuestionCircle />
-				</a-button>
-			</a-col>
-		</a-row>
-		<div>
+					<a-button
+						size="mini"
+						@click="showModelGuide"
+					>
+						操作教程 <IconQuestionCircle />
+					</a-button>
+				</a-col>
+			</a-row>
+		</div>
+		<div class="render-container">
 			<div
 				ref="modelRenderSlotRef"
 				class="model-render-slot"
@@ -64,47 +66,19 @@
 			></div>
 
 			<div
+				v-if="pixelImageDataURL"
 				ref="pixelRenderSlotRef"
-				class="pixel-render-slot"
+				class="h-full"
 				@click="state.current_select_color = ''"
-				@wheel="onPixelWheel"
 			>
-				<div
-					v-if="pixel_data"
-					:style="{
-						width: currentPixelWidth + 'px',
-						height: currentPixelWidth + 'px'
-					}"
-					style="line-height: 0px"
-				>
-					<span
-						v-for="(color, i) of pixel_data.colors || []"
-						:key="i"
-						:style="{
-							backgroundColor: color === 'transparent' ? undefined : color,
-							width: currentPixelWidth / (pixel_data.width || 0) + 'px',
-							height: currentPixelWidth / (pixel_data.height || 0) + 'px',
-							borderRight: state.show_pixel_border ? '1px solid #525252' : undefined,
-							borderBottom: state.show_pixel_border ? '1px solid #525252' : undefined,
-							borderTop: state.show_pixel_border
-								? parseInt(String(i / pixel_data.width)) === 0
-									? '1px solid #525252'
-									: undefined
-								: undefined,
-							borderLeft: state.show_pixel_border
-								? i % pixel_data.width === 0
-									? '1px solid #525252'
-									: undefined
-								: undefined
-						}"
-						:class="(color === 'transparent' ? 'transparent-gird' : '') + ' inline-block pixel-item'"
-						title="点击显示颜色"
-						@click.stop="state.current_select_color = color === 'transparent' ? 'rgba(0,0,0,0)' : color"
-					></span>
-				</div>
+				<PixelImage
+					:image-data-url="pixelImageDataURL"
+					:show-pixel-border="state.show_pixel_border"
+					:width="state.pixel_width"
+					@select-color="(color) => (state.current_select_color = color)"
+				></PixelImage>
 			</div>
 		</div>
-
 		<div class="details-modal">
 			<div
 				v-if="state.current_select_color"
@@ -144,28 +118,25 @@ import { store } from '@/store';
 import { ipcRenderer } from 'electron';
 import { RenderItem } from '@/utils/core/renderer';
 import { McModelRenderer } from '@/utils/model-viewer';
-import { reactive, ref } from 'vue';
+import { reactive, ref, h } from 'vue';
 import RenderMenu from './RenderMenu.vue';
-import { getPixelData } from '@/components/utils';
-import { PixelData } from '@/components/interface';
 import throttle from 'lodash/throttle';
+import PixelImage from './PixelImage.vue';
 import ItemsAdderDetails from './ItemsAdderDetails.vue';
 
 const modelRenderSlotRef = ref<HTMLElement>();
 const pixelRenderSlotRef = ref<HTMLElement>();
 const renderItemRef = ref<RenderItem>();
 
-const pixel_data = ref<PixelData>();
+const pixelImageDataURL = ref<string>();
 
 const state = reactive({
-	show_pixel_border: false,
-	pixel_scale: 1,
+	show_pixel_border: true,
+	pixel_width: 256,
 	current_select_color: '',
 	detailsModalVisible: false,
 	modelGuideModalVisible: false
 });
-
-const currentPixelWidth = ref(getPixelWidth(1));
 
 const modelRenderer = new McModelRenderer({
 	width: window.document.documentElement.clientWidth,
@@ -185,8 +156,6 @@ ipcRenderer.on('args', async (e, { render_item: _render_item, asset_folder }) =>
 			if (folder) {
 				const assetFolder = await AssetFolder.deserialize(folder);
 
-				// modelRenderer.setBackGroundColor('white');
-
 				const renderer = new ItemsAdderFolderRenderer(assetFolder, modelRenderer);
 
 				const el = await renderer.render(render_item);
@@ -202,31 +171,24 @@ ipcRenderer.on('args', async (e, { render_item: _render_item, asset_folder }) =>
 				}, 20);
 			}
 		} else {
-			getPixelData(render_item.data.texture).then((pixelData) => {
-				pixel_data.value = pixelData;
-			});
+			pixelImageDataURL.value = render_item.data.texture;
 
-			const pixelElResize = throttle(() => {
-				if (pixelRenderSlotRef.value) {
-					state.pixel_scale = 1;
-					currentPixelWidth.value = getPixelWidth(state.pixel_scale);
-					pixelRenderSlotRef.value.style.width = window.document.documentElement.clientWidth + 'px';
-					pixelRenderSlotRef.value.style.height = window.document.documentElement.clientHeight - 40 + 'px';
-				}
-			}, 20);
-
-			pixelElResize();
-			window.onresize = pixelElResize;
+			state.pixel_width = Math.min(
+				window.document.documentElement.clientWidth,
+				window.document.documentElement.clientHeight - 40
+			);
+			window.addEventListener(
+				'resize',
+				throttle(() => {
+					state.pixel_width = Math.min(
+						window.document.documentElement.clientWidth,
+						window.document.documentElement.clientHeight - 40
+					);
+				}, 20)
+			);
 		}
 	}
 });
-
-function getPixelWidth(pixel_scale: number) {
-	return (
-		(Math.min(window.document.documentElement.clientWidth, window.document.documentElement.clientHeight) - 100) *
-		pixel_scale
-	);
-}
 
 function rgbaToHex(rgba: string) {
 	const match = rgba.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*(\d+)\)/);
@@ -240,6 +202,7 @@ function rgbaToHex(rgba: string) {
 	const alpha = Math.round(parseInt(match[4])).toString(16).padStart(2, '0');
 	return `#${red}${green}${blue}${alpha}`;
 }
+
 function showDetails() {
 	state.detailsModalVisible = !state.detailsModalVisible;
 }
@@ -253,64 +216,30 @@ function oncModelContextmenu(e: Event) {
 	e.preventDefault();
 	e.stopPropagation();
 }
-
-function onPixelWheel(e: WheelEvent) {
-	let temp_pixel_scale = state.pixel_scale;
-	if (e.deltaY > 0) {
-		temp_pixel_scale -= 0.1;
-	} else {
-		temp_pixel_scale += 0.1;
-	}
-
-	temp_pixel_scale = Math.max(0.1, temp_pixel_scale);
-	temp_pixel_scale = Math.min(2, temp_pixel_scale);
-
-	const width = getPixelWidth(temp_pixel_scale);
-
-	// 计算如果将要超出屏幕，就不再放大
-	if (width > Math.min(window.document.documentElement.clientWidth, window.document.documentElement.clientHeight)) {
-		return;
-	} else {
-		state.pixel_scale = temp_pixel_scale;
-	}
-
-	currentPixelWidth.value = width;
-}
 </script>
 
 <style scoped lang="less">
 .menu-bar {
-	min-width: 600px;
 	padding: 4px;
 	background-color: #72748696;
+	width: 100%;
 }
 
-.render-layout {
-	display: grid;
-	grid-template-rows: 40px calc(100% - 40px);
-	height: 100%;
+.render-container {
+	position: absolute;
+	top: 40px;
+	height: calc(100% - 40px);
+	width: 100%;
 }
 
 .render-page {
 	background: url('../../assets/img/render-bg.png');
-}
-
-.pixel-render-slot {
-	display: flex;
-	justify-content: center;
-	align-content: center;
-	flex-wrap: wrap;
+	height: 100%;
+	width: 100%;
 }
 
 .transparent-gird {
 	background-color: rgba(76, 64, 64, 0);
-}
-
-.pixel-item {
-	cursor: pointer;
-	&:hover {
-		border: 1px solid #188fffb2 !important;
-	}
 }
 
 .details-modal {
@@ -319,5 +248,7 @@ function onPixelWheel(e: WheelEvent) {
 	top: 40px;
 	background-color: #67616121;
 	overflow: hidden;
+	width: fit-content;
+	height: fit-content;
 }
 </style>

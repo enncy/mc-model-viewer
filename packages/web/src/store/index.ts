@@ -7,27 +7,21 @@ import { AssetFolderInfo } from '@/utils/core/workspace';
 export const store = reactive({
 	current_workspace_name: '',
 	setting: {
-		workspace: {
+		folder_preview: {
+			show_displayname: true,
 			/**
-			 * 自动更新文件内容
+			 * 物品默认大小
 			 */
-			auto_update_files: true,
-			need_update_flex_exts: ['json', 'yml', 'yaml', 'png', 'jpg'],
-			itemsadder_plugin_folder_name: 'ItemsAdder',
-			itemsadder_plugin_contents_name: 'contents'
-		},
-		preview_render: {
-			width: 200,
-			height: 200
-		},
-		details_render: {
-			width: 600,
-			height: 600
+			item_default_size: 64,
+			/**
+			 * 模型默认大小
+			 */
+			model_default_size: 128
 		},
 		blockbench_path: '',
 		vscode_path: ''
 	},
-	current_folder_render_info_name: '',
+	current_render_group_name: '',
 	current_asset_folder_name: '',
 	asset_folders: [] as AssetFolderInfo[]
 });

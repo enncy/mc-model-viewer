@@ -1,10 +1,19 @@
 <!-- eslint-disable vue/no-v-html -->
 <template>
-	<div class="folder-render">
-		<div class="folder-render-container">
-			<template v-for="item of folderRenderInfo.items || []">
+	<div class="folder-preview">
+		<div
+			class="folder-preview-container"
+			:style="{
+				gridTemplateColumns: `repeat(auto-fill, ${
+					childName === 'items'
+						? store.setting.folder_preview.item_default_size
+						: store.setting.folder_preview.model_default_size
+				}px)`
+			}"
+		>
+			<template v-for="item of renderGroup.items || []">
 				<div
-					class="cursor-pointer"
+					class="cursor-pointer preview-item"
 					@click="emits('render', item)"
 				>
 					<a-tooltip
@@ -22,16 +31,16 @@
 								</div>
 							</div>
 						</template>
-						<a-row class="render-item">
+						<a-row>
 							<a-col class="flex justify-center">
-								<div
-									style="min-width: 32px; min-height: 32px"
-									class="flex justify-center items-center"
-								>
+								<div class="flex justify-center items-center">
 									<img :src="item.screenshot" />
 								</div>
 							</a-col>
-							<a-col class="text-center mt-1 displayname">
+							<a-col
+								v-if="store.setting.folder_preview.show_displayname"
+								class="text-center mt-1 displayname"
+							>
 								<span v-html="colored(item.displayname)"></span>
 							</a-col>
 						</a-row>
@@ -39,17 +48,18 @@
 				</div>
 			</template>
 		</div>
-		<template v-if="folderRenderInfo.children.length">
+		<template v-if="renderGroup.children.length">
 			<a-card
-				v-for="child of folderRenderInfo.children"
+				v-for="child of renderGroup.children"
 				:key="child.name"
 				:title="child.name"
 			>
 				<div :class="child.name">
-					<FolderRender
-						:folder-render-info="child"
+					<FolderPreview
+						:child-name="child.name"
+						:render-group="child"
 						@render="(item) => emits('render', item)"
-					></FolderRender>
+					></FolderPreview>
 				</div>
 			</a-card>
 		</template>
@@ -57,12 +67,14 @@
 </template>
 
 <script setup lang="ts">
-import { FolderRenderInfo, RenderItem } from '@/utils/core/renderer';
-import FolderRender from './FolderRender.vue';
+import { RenderGroup, RenderItem } from '@/utils/core/renderer';
+import FolderPreview from './FolderPreview.vue';
 import { colored } from '@/utils/color';
+import { store } from '@/store';
 
 defineProps<{
-	folderRenderInfo: FolderRenderInfo;
+	renderGroup: RenderGroup;
+	childName?: string;
 }>();
 
 const emits = defineEmits<{
@@ -71,13 +83,12 @@ const emits = defineEmits<{
 </script>
 
 <style scoped lang="less">
-.folder-render-container {
+.folder-preview-container {
 	display: grid;
-	grid-template-columns: repeat(auto-fill, 64px);
 	gap: 8px;
 }
 
-.folder-render {
+.folder-preview {
 	:deep(.arco-card-body) {
 		background-color: white !important;
 		margin: 0;
@@ -86,19 +97,19 @@ const emits = defineEmits<{
 }
 
 .items {
-	:deep(.folder-render-container) {
+	:deep(.folder-preview-container) {
 		color: white;
 		font-size: 12px;
 		background-color: #c6c6c6;
 		padding: 12px;
 		gap: 0px;
 
-		.render-item {
+		.preview-item {
 			img {
-				max-width: 32px;
-				max-height: 32px;
 				overflow: hidden;
 			}
+
+			overflow: hidden;
 
 			border-right: 2px solid #ffffff;
 			border-bottom: 2px solid #ffffff;
@@ -112,13 +123,7 @@ const emits = defineEmits<{
 	}
 }
 
-.models {
-	:deep(.folder-render-container) {
-		grid-template-columns: repeat(auto-fill, 128px);
-	}
-}
-
-.render-item {
+.preview-item {
 	&:hover {
 		background-color: #f8f8f8;
 	}

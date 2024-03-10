@@ -11,7 +11,10 @@
 			<div class="header">MC Model Viewer</div>
 		</div>
 		<div class="body-container h-full">
-			<a-config-provider :locale="zhCN">
+			<a-config-provider
+				:locale="zhCN"
+				:size="state.size"
+			>
 				<router-view v-slot="{ Component }">
 					<keep-alive>
 						<component :is="Component" />
@@ -23,7 +26,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, nextTick } from 'vue';
+import { onMounted, ref, nextTick, reactive } from 'vue';
 import { requireElectronContext, isElectronEnv } from './utils/remote';
 // @ts-ignore
 import zhCN from '@arco-design/web-vue/es/locale/lang/zh-CN';
@@ -32,10 +35,22 @@ import { Message } from '@arco-design/web-vue';
 const headerContainer = ref<HTMLDivElement>();
 const renderContainer = ref<HTMLDivElement>();
 
+const state = reactive({
+	size: 'medium' as 'medium' | 'mini'
+});
+
 window.onerror = (message, source, lineno, colno, error) => {
 	console.error(message, source, lineno, colno, error);
 	Message.error('发生未知错误 ： ' + message);
 };
+
+window.addEventListener('resize', () => {
+	if (window.window.innerWidth < 400) {
+		state.size = 'mini';
+	} else {
+		state.size = 'medium';
+	}
+});
 
 requireElectronContext(({ ipcRenderer }) => {
 	ipcRenderer.on('show-custom-title-bar', () => {

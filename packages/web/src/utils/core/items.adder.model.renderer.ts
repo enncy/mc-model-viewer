@@ -1,10 +1,11 @@
 import { McModelRenderer } from '../model-viewer';
 import { Asset } from './assets';
-import { FolderRenderInfo, FolderRenderer, RenderItem } from './renderer';
+import { FolderRenderer, RenderItem } from './renderer';
 import * as THREE from 'three';
 import { AssetFolder } from './workspace';
 import { previewer } from '../previewer';
 import { VNode } from 'vue';
+import { textureResize } from '@/components/utils';
 
 type ModelJson = {
 	texture_size?: [number, number];
@@ -128,7 +129,13 @@ export class ItemsAdderFolderRenderer implements FolderRenderer {
 	asset_folder: AssetFolder;
 	mcModelRenderer: McModelRenderer | undefined;
 
-	constructor(asset_folder: AssetFolder, mcModelRenderer?: McModelRenderer) {
+	constructor(
+		asset_folder: AssetFolder,
+		mcModelRenderer?: McModelRenderer,
+		public options?: {
+			item_preview_size: number;
+		}
+	) {
 		this.asset_folder = asset_folder;
 		this.mcModelRenderer = mcModelRenderer;
 	}
@@ -169,7 +176,7 @@ export class ItemsAdderFolderRenderer implements FolderRenderer {
 				render_item.data.model_json,
 				render_item.data.textures_results
 			);
-			const dataURL = await previewer.getObject3DDataURL(object, {
+			const dataURL = await previewer.getImageDataURL(object, {
 				auto_camera: true
 			});
 			return dataURL;
@@ -255,7 +262,7 @@ export class ItemsAdderFolderRenderer implements FolderRenderer {
 					}
 
 					const object = await createMcModel(item_json.display_name, model_json, textures_results);
-					const dataURL = await previewer.getObject3DDataURL(object, {
+					const dataURL = await previewer.getImageDataURL(object, {
 						auto_camera: true
 					});
 
@@ -272,7 +279,11 @@ export class ItemsAdderFolderRenderer implements FolderRenderer {
 						const texture_asset = this.getItemTextureAsset(config_json.info.namespace, texture_relative_path);
 						if (texture_asset) {
 							items.push({
-								screenshot: texture_asset.content,
+								screenshot: await textureResize(
+									texture_asset.content,
+									this.options?.item_preview_size || 64,
+									this.options?.item_preview_size || 64
+								),
 								filename: texture_asset.filepath,
 								displayname: item_json.display_name,
 								parents: [config_json.info.namespace, 'items'],

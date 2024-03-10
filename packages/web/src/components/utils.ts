@@ -42,6 +42,65 @@ export function getPixelData(texture: string) {
 }
 
 /**
+ * 将像素图片等比例放大
+ * @param texture 		图片base64
+ * @param width 		宽度
+ * @param height 		高度
+ */
+export function textureResize(texture: string, width: number, height: number) {
+	return new Promise<string>((resolve, reject) => {
+		const canvas = document.createElement('canvas');
+		const img = new Image();
+
+		img.src = texture;
+		img.onload = async () => {
+			try {
+				const colors = [];
+				canvas.getContext('2d')?.drawImage(img, 0, 0, img.width, img.height);
+				const imageData = canvas.getContext('2d')?.getImageData(0, 0, img.width, img.height).data;
+				if (imageData) {
+					for (let i = 0; i < imageData.length; i += 4) {
+						const r = imageData[i];
+						const g = imageData[i + 1];
+						const b = imageData[i + 2];
+						const a = imageData[i + 3];
+						if (r === 0 && g === 0 && b === 0 && a === 0) {
+							colors.push('transparent');
+						} else {
+							colors.push(`rgba(${r}, ${g}, ${b}, ${a})`);
+						}
+					}
+				}
+
+				const new_canvas = document.createElement('canvas');
+				new_canvas.width = width;
+				new_canvas.height = height;
+				const new_ctx = new_canvas.getContext('2d');
+				if (new_ctx) {
+					for (let i = 0; i < colors.length; i++) {
+						const x = i % img.width;
+						const y = Math.floor(i / img.width);
+						new_ctx.fillStyle = colors[i];
+
+						new_ctx.fillRect(
+							(x * width) / img.width,
+							(y * height) / img.height,
+							width / img.width,
+							height / img.height
+						);
+					}
+				}
+
+				resolve(new_canvas.toDataURL());
+			} catch (err) {
+				console.error(err);
+			}
+		};
+		img.onerror = console.error;
+	});
+}
+
+/**
  *
  * 获取绘制材质背景板的背景类名
  */

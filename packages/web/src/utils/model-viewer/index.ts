@@ -125,7 +125,7 @@ export class McModelRenderer {
 		}
 
 		// 网格辅助
-		const gridHelper = new THREE.GridHelper(16);
+		const gridHelper = new THREE.GridHelper(16, 16);
 		gridHelper.name = 'grid';
 		gridHelper.material.opacity = 0.2;
 		gridHelper.material.transparent = true;
@@ -183,7 +183,7 @@ export class McModelRenderer {
 			return;
 		}
 		// 坐标轴辅助
-		const axesHelper = new THREE.AxesHelper(100);
+		const axesHelper = new THREE.AxesHelper(16);
 		axesHelper.name = 'axes';
 		axesHelper.position.x = 0;
 		axesHelper.position.y = 0;

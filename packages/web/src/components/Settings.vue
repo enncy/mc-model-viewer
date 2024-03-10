@@ -1,5 +1,49 @@
 <template>
 	<div>
+		<a-divider> 预览设置 </a-divider>
+
+		<AutoFormItem
+			class="mb-2"
+			label="显示预览图名称"
+		>
+			<a-switch v-model="store.setting.folder_preview.show_displayname"> </a-switch>
+		</AutoFormItem>
+
+		<AutoFormItem
+			class="mb-2"
+			label="物品默认大小"
+		>
+			<a-input-number
+				v-model="store.setting.folder_preview.item_default_size"
+				style="width: 200px"
+				:min="32"
+				:max="256"
+				:step="16"
+			>
+				<template #append>像素</template>
+			</a-input-number>
+		</AutoFormItem>
+
+		<AutoFormItem
+			class="mb-2"
+			label="模型默认大小"
+		>
+			<a-input-number
+				v-model="store.setting.folder_preview.model_default_size"
+				style="width: 200px"
+				:min="64"
+				:max="256"
+				:step="16"
+				@change="
+					(model_default_size) => {
+						previewer.model_size = model_default_size || previewer.model_size;
+					}
+				"
+			>
+				<template #append>像素</template>
+			</a-input-number>
+		</AutoFormItem>
+
 		<a-divider>
 			<OnlyElectronTag> 第三方应用设置 </OnlyElectronTag>
 		</a-divider>
@@ -65,6 +109,7 @@ import { store } from '@/store';
 import AutoFormItem from './AutoFormItem.vue';
 import OnlyElectronTag from './OnlyElectronTag.vue';
 import { isElectronEnv, requireElectronContext } from '../utils/remote';
+import { previewer } from '@/utils/previewer';
 const common_width = '220px';
 
 const is_in_electron = isElectronEnv();

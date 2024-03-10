@@ -1,5 +1,3 @@
-import { VNode } from 'vue';
-
 export type RenderItem = {
 	screenshot: string;
 	filename: string;
@@ -8,10 +6,10 @@ export type RenderItem = {
 	data: any;
 };
 
-export type FolderRenderInfo = {
+export type RenderGroup = {
 	name: string;
 	items: RenderItem[];
-	children: FolderRenderInfo[];
+	children: RenderGroup[];
 };
 
 export interface FolderRenderer {
